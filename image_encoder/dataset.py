@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 
@@ -15,9 +16,9 @@ class CelebDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.captions.loc[idx, 'head'], self.captions.loc[idx, 'name'])
-        image = read_image(img_path)
-        #label = self.img_labels.iloc[idx, 'caption']
-        label = None
+        #image = read_image(img_path)
+        image = Image.open(img_path)
+        label = self.captions.loc[idx, 'caption']
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
