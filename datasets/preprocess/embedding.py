@@ -7,7 +7,7 @@ import torch
 # Input으로 token list를 받아서, 학습된 model을 출력하는 class 만들어보기~ class가 불필요하면 함수로 구현해도 될 듯.
 
 # Input으로 token list를 받음!
-class embedding_caption():
+class Embedding_caption():
     def __init__(self,sentences,vector_size=256,window=1,min_count=2,sg=1,method="w2v"):
         self.sentences=sentences
         self.vector_size=vector_size
@@ -23,3 +23,5 @@ class embedding_caption():
                 window = self.window, min_count = self.min_count, sg = self.sg)
     def return_vectors(self):
         return torch.from_numpy(self.model.wv.vectors)
+    def save_file(self):
+        self.model.save('embedding_model')
