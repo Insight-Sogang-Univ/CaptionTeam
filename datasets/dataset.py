@@ -7,7 +7,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 from torchtext.legacy.data import Iterator
-from preprocess import vocab
+from datasets.preprocess import vocab
 
 class CelebDataset(Dataset):
     def __init__(self, captions_path:str, img_dir:str, embedder=None, fixed_length=20, dic_path=None, transform=None):
