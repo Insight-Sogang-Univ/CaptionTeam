@@ -23,6 +23,7 @@ class CelebDataset(Dataset):
         self.word2idx = dict(self.vocabs.TEXT.vocab.stoi)
         self.target_transform = embedder
         self.transform = transform
+        self.idx2word=dict([(value, key) for key, value in self.word2idx.items()])
         
     def __len__(self):
         return len(self.data)
@@ -34,6 +35,7 @@ class CelebDataset(Dataset):
         
         label = self.vocabs.captionTokens.examples[idx].caption
         label = [self.word2idx.get(word, 0) for word in label]
+        
         # Pad the label
         if len(label)<self.fixed_length:
             [label.append(1) for _ in range(self.fixed_length - len(label))]
@@ -41,14 +43,30 @@ class CelebDataset(Dataset):
             label = label[:self.fixed_length]
         label = torch.Tensor(label)
         
+        '''
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
+        '''
         return image, label
     
     def set_embedder(self, embedder):
         self.target_transform = embedder
         
-    def idx2word(self):
-        return dict([(value, key) for key, value in self.word2idx.items()])
+    def get_both(self,idx):
+        img_path = os.path.join(self.img_dir, self.data.loc[idx, 'head'], self.data.loc[idx, 'name'])
+        image = Image.open(img_path)
+        
+        if self.target_transform:
+            L=[]
+            for i in list(self[idx])[1].int():
+                if i==0:
+                    L.append(np.zeros(self.target_transform.vector_size))
+                elif i==1:
+                    L.append(np.zeros(self.target_transform.vector_size))
+                else:
+                    n1=list(self.idx2word.values())[i]
+                    L.append(self.target_transform.model.wv[n1])
+            label=torch.tensor(L)
+            return image, label
