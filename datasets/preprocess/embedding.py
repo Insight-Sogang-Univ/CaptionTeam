@@ -1,26 +1,37 @@
 # Class for Embedding
 
+import torch
+import pandas as pd
 from gensim.models.word2vec import Word2Vec
 from gensim.models import FastText
-import torch
+from datasets.preprocess.vocab import VocabBuilder
 
-# Input으로 token list를 받아서, 학습된 model을 출력하는 class 만들어보기~ class가 불필요하면 함수로 구현해도 될 듯.
-
-class Embedding_caption():
-    def __init__(self,sentences,vector_size=256,window=1,min_count=2,sg=1,method="w2v"):
-        self.sentences=sentences
+class CaptionEmbedder():
+    def __init__(self,vector_size=256,window=1,min_count=2,sg=1,method="w2v"):
+        self.captions=None
         self.vector_size=vector_size
         self.window=window
         self.min_count=min_count
         self.sg=sg
         self.method=method
-        if method=='w2v':
-            self.model=Word2Vec(sentences = self.sentences, vector_size = self.vector_size, \
+        self.vocab=None
+        self.model=None
+        
+    def fit(self, caption_path, tokenizer_dic_path):
+        #Tokenize
+        self.vocab = VocabBuilder(tokenizer_dic_path)
+        self.vocab.tokenize_df(caption_path)
+        self.captions = self.vocab.captionTokens
+        
+        if self.method=='w2v':
+            self.model=Word2Vec(sentences = self.captions, vector_size = self.vector_size, \
                 window = self.window, min_count = self.min_count, sg = self.sg)
-        elif method=='fast':
-            self.model=FastText(sentences = self.sentences, vector_size = self.vector_size, \
+        elif self.method=='fast':
+            self.model=FastText(sentences = self.captions, vector_size = self.vector_size, \
                 window = self.window, min_count = self.min_count, sg = self.sg)
+            
     def return_vectors(self):
         return torch.from_numpy(self.model.wv.vectors)
-    def save_file(self, file_name):
+    
+    def save(self, file_name):
         self.model.save(file_name)

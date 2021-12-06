@@ -17,13 +17,12 @@ class CelebDataset(Dataset):
         self.data = pd.read_csv(captions_path)
         self.img_dir = img_dir
 
-        self.vocabs = vocab.VocabBuilder(dic_path, fixed_length)
-        self.vocabs.tokenize_df(captions_path)
+        self.captionTokens = vocab.VocabBuilder(dic_path, fixed_length).tokenize_df(captions_path)
         self.fixed_length = fixed_length
-        self.word2idx = dict(self.vocabs.TEXT.vocab.stoi)
-        self.target_transform = embedder
+        
+        self.set_embedder(embedder)
+        
         self.transform = transform
-        self.idx2word=dict([(value, key) for key, value in self.word2idx.items()])
         
     def __len__(self):
         return len(self.data)
@@ -33,7 +32,26 @@ class CelebDataset(Dataset):
         img_path = os.path.join(self.img_dir, self.data.loc[idx, 'head'], self.data.loc[idx, 'name'])
         image = Image.open(img_path)
         
-        label = self.vocabs.captionTokens.examples[idx].caption
+        indices = self.get_indexed_caption(idx)
+        
+        if self.target_transform:
+            label=torch.zeros((20, self.vector_size))
+            for i, w_idx in enumerate(indices.tolist()):
+                if self.idx2word[w_idx]=='<unk>':
+                    label[i] = torch.zeros(self.vector_size)
+                elif self.idx2word[w_idx]=='<pad>':
+                    label[i] = torch.zeros(self.vector_size)
+                else:
+                    label[i] = torch.from_numpy(self.target_transform[self.idx2word[w_idx]])
+            
+        return image, label
+    
+    def get_raw_caption(self, idx):
+        label = self.data['caption'][idx]
+        return label
+    
+    def get_indexed_caption(self, idx):
+        label = self.captionTokens[idx]
         label = [self.word2idx.get(word, 0) for word in label]
         
         # Pad the label
@@ -41,32 +59,14 @@ class CelebDataset(Dataset):
             [label.append(1) for _ in range(self.fixed_length - len(label))]
         else:
             label = label[:self.fixed_length]
-        label = torch.Tensor(label)
+        label = torch.tensor(label, dtype=torch.int64)
         
-        '''
-        if self.transform:
-            image = self.transform(image)
-        if self.target_transform:
-            label = self.target_transform(label)
-        '''
-        return image, label
+        return label
     
     def set_embedder(self, embedder):
-        self.target_transform = embedder
-        
-    def get_both(self,idx):
-        img_path = os.path.join(self.img_dir, self.data.loc[idx, 'head'], self.data.loc[idx, 'name'])
-        image = Image.open(img_path)
-        
-        if self.target_transform:
-            L=[]
-            for i in list(self[idx])[1].int():
-                if i==0:
-                    L.append(np.zeros(self.target_transform.vector_size))
-                elif i==1:
-                    L.append(np.zeros(self.target_transform.vector_size))
-                else:
-                    n1=list(self.idx2word.values())[i]
-                    L.append(self.target_transform.model.wv[n1])
-            label=torch.tensor(L)
-            return image, label
+        self.embedder = embedder
+        self.vocabs = self.embedder.vocab
+        self.word2idx = dict(self.vocabs.TEXT.vocab.stoi)
+        self.idx2word=dict([(value, key) for key, value in self.word2idx.items()])
+        self.target_transform = embedder.model.wv
+        self.vector_size = embedder.vector_size
