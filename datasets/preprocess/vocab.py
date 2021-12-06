@@ -3,7 +3,7 @@ from konlpy.tag import Mecab
 from torchtext.legacy.data import TabularDataset
 
 class VocabBuilder():
-    def __init__(self, dic_path, fix_length, how='mecab'):
+    def __init__(self, dic_path, fix_length=20, how='mecab'):
         self.fix_length = fix_length
         self.tokenizer = Mecab(dicpath=dic_path)
         self.tokenizer = self.tokenizer.morphs
@@ -18,16 +18,19 @@ class VocabBuilder():
         return self.tokenizer(caption)
 
     def tokenize_df(self, csv_path, feature='caption', build=True, min_freq=5):
-        captions = TabularDataset(
+        caption_exs = TabularDataset(
             path=csv_path, format='csv',
             fields=[(feature, self.TEXT)], skip_header=True
             )
         
+        self._captionExamples=caption_exs
+        self.captionTokens=[example.caption for example in caption_exs]
+                        
         if build:
-            self.captionTokens=captions
-            self.TEXT.build_vocab(captions, min_freq=min_freq)
+            self.TEXT.build_vocab(caption_exs, min_freq=min_freq)
+            return self.captionTokens
         else:
-            return captions
+            return self.captionTokens
     
     def build_vocab(self, dataset, min_freq=5):
         self.TEXT.build_vocab(dataset, min_freq)
