@@ -41,14 +41,9 @@ class CelebDataset(Dataset):
             image = self.transform(image)
         
         if self.target_transform:
-            label=torch.zeros((20, self.vector_size))
-            for i, w_idx in enumerate(indices.tolist()):
-                if self.idx2word[w_idx]=='<unk>':
-                    label[i] = torch.zeros(self.vector_size)
-                elif self.idx2word[w_idx]=='<pad>':
-                    label[i] = torch.zeros(self.vector_size)
-                else:
-                    label[i] = torch.from_numpy(self.target_transform[self.idx2word[w_idx]].copy())
+            label=self.target_tranform(indices)
+        else:
+            label=indices
             
         return image, label
     
@@ -74,5 +69,16 @@ class CelebDataset(Dataset):
         self.vocabs = self.embedder.vocab
         self.word2idx = dict(self.vocabs.TEXT.vocab.stoi)
         self.idx2word=dict([(value, key) for key, value in self.word2idx.items()])
-        self.target_transform = embedder.model.wv
+        self.target_transform = self.transform_by_dict
         self.vector_size = embedder.vector_size
+        
+    def transform_by_dict(self, indices):
+        label=torch.zeros((self.fixed_length, self.vector_size))
+        for i, w_idx in enumerate(indices.tolist()):
+            if self.idx2word[w_idx]=='<unk>':
+                label[i] = torch.zeros(self.vector_size)
+            elif self.idx2word[w_idx]=='<pad>':
+                label[i] = torch.zeros(self.vector_size)
+            else:
+                label[i] = torch.from_numpy(self.embedder.model.wv[self.idx2word[w_idx]].copy())
+        return label
