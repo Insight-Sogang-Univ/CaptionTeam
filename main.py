@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from models import encoder, decoder
@@ -6,6 +7,7 @@ from datasets.dataset import CelebDataset
 from datasets.preprocess.embedding import CaptionEmbedder
 
 if __name__=='__main__':
+    
     # Embedder parameter
     VECTOR_DIM = 256
     DIC_PATH = 'C:\mecab\mecab-ko-dic'
@@ -13,6 +15,7 @@ if __name__=='__main__':
     # Embedder 초기화
     ft_embedder = CaptionEmbedder(vector_size=VECTOR_DIM)
     ft_embedder.fit('captions.csv',DIC_PATH)
+    VOCAB_SIZE = ft_embedder.vocab_size
     
     # Dataset 정의
     train_data = CelebDataset('datasets/debug/captions.csv','datasets/debug/img',embedder=ft_embedder,dic_path=DIC_PATH)
@@ -32,3 +35,8 @@ if __name__=='__main__':
     
     print('train loader의 images{}가 Encoder를 통과한 결과 features{}'.format(images.size(),features.size()))
     print(features)
+    
+    Decoder = decoder.DecoderLSTM(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2)
+    result = Decoder(features, torch.zeros((16,20,VECTOR_DIM)))
+    print(result.size())
+    print(result)
