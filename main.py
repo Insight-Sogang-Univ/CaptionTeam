@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from models import encoder, decoder
 from datasets.dataset import CelebDataset
 from datasets.preprocess.embedding import CaptionEmbedder
+from models.encoder_to_decoder import EncodertoDecoder
 
 if __name__=='__main__':
     
@@ -28,15 +29,11 @@ if __name__=='__main__':
     train_loader = DataLoader(train_data, batch_size=16, shuffle=True) 
     # next, iter를 통해 loader로부터 image, caption batch 추출
     images, captions = next(iter(train_loader))
-    # VECROT_DIM size의 output을 반환하는 Encoder 정의
-    Encoder = encoder.EncoderInception3(embed_size = VECTOR_DIM)
-    # image를 Encoder에 forwarding한 결과 features 반환
-    features = Encoder(images)
     
-    print('train loader의 images{}가 Encoder를 통과한 결과 features{}'.format(images.size(),features.size()))
-    print(features)
     
-    Decoder = decoder.DecoderLSTM(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2)
-    result = Decoder(features, torch.zeros((16,20,VECTOR_DIM)))
-    print(result.size())
-    print(result)
+    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2)
+    result = model(images, torch.zeros((16,20,VECTOR_DIM)))
+    
+    result2 = model.caption_image(images[0], ft_embedder.vocab.TEXT.vocab, ft_embedder, max_length=20)
+    print(len(result2))
+    print(result2)
