@@ -21,6 +21,7 @@ class CaptionEmbedder():
         #Tokenize
         self.vocab = VocabBuilder(tokenizer_dic_path)
         self.vocab.tokenize_df(caption_path)
+        self.vocab_size = len(self.vocab.TEXT.vocab.stoi)
         self.captions = self.vocab.captionTokens
         
         if self.method=='w2v':
