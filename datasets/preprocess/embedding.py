@@ -30,6 +30,8 @@ class CaptionEmbedder():
         elif self.method=='fast':
             self.model=FastText(sentences = self.captions, vector_size = self.vector_size, \
                 window = self.window, min_count = self.min_count, sg = self.sg)
+        self.word2idx = dict(self.vocab.TEXT.vocab.stoi)
+        self.idx2word=dict([(value, key) for key, value in self.word2idx.items()])
             
     def return_vectors(self):
         return torch.from_numpy(self.model.wv.vectors)
@@ -43,4 +45,4 @@ class CaptionEmbedder():
         elif self.idx2word[idx]=='<pad>':
             return torch.zeros(self.vector_size)
         else:
-            return self.model.wv[self.idx2word[idx]].copy()
+            return torch.from_numpy(self.model.wv[self.idx2word[idx]].copy())

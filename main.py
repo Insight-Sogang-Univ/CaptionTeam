@@ -9,7 +9,7 @@ from models.encoder_to_decoder import EncodertoDecoder
 
 if __name__=='__main__':
     
-    # Embedder parameter
+    # Embedder parameter 
     VECTOR_DIM = 256
     DIC_PATH = 'C:\mecab\mecab-ko-dic'
     

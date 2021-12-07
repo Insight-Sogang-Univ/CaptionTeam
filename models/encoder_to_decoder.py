@@ -30,7 +30,11 @@ class EncodertoDecoder(nn.Module):
                 predicted = output.argmax(-1)
                 
                 result_caption.append(predicted.item())
-                x = embedder.target_transform(predicted).unsqueeze(1)
+                print(predicted)
+                print(type(predicted))
+                print(predicted.size())
+                
+                x = embedder.transform_by_dict(predicted.item()).unsqueeze(0).unsqueeze(0)
                 
                 if vocabulary.itos[predicted.item()] == "<pad>":
                     break
