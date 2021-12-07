@@ -41,7 +41,7 @@ class CelebDataset(Dataset):
             image = self.transform(image)
         
         if self.target_transform:
-            label=self.target_tranform(indices)
+            label=self.target_transform(indices)
         else:
             label=indices
             
