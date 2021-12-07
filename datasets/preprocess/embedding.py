@@ -36,3 +36,11 @@ class CaptionEmbedder():
     
     def save(self, file_name):
         self.model.save(file_name)
+        
+    def transform_by_dict(self, idx):
+        if self.idx2word[idx]=='<unk>':
+            return torch.zeros(self.vector_size)
+        elif self.idx2word[idx]=='<pad>':
+            return torch.zeros(self.vector_size)
+        else:
+            return self.model.wv[self.idx2word[idx]].copy()
