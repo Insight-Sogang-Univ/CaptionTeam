@@ -3,14 +3,15 @@ import pandas as pd
 import numpy as np
 import torch
 from gensim.models import Word2Vec
-from PIL import Image
+#from PIL import Image
 from torch.utils.data import Dataset
+from torchvision import transforms
 from torchvision.io import read_image
 from torchtext.legacy.data import Iterator
 from datasets.preprocess import vocab
 
 class CelebDataset(Dataset):
-    def __init__(self, captions_path:str, img_dir:str, embedder=None, fixed_length=20, dic_path=None, transform=None):
+    def __init__(self, captions_path:str, img_dir:str, embedder=None, fixed_length=20, dic_path=None):
         '''
         captions_path : dataframe which contains file path - 'head','name' and caption tokens - 'tokenized_captions'
         ''' 
@@ -22,17 +23,22 @@ class CelebDataset(Dataset):
         
         self.set_embedder(embedder)
         
-        self.transform = transform
-        
+        self.transform = transforms.Compose([
+            transforms.Resize((299,299))
+            ])
+                                
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         
         img_path = os.path.join(self.img_dir, self.data.loc[idx, 'head'], self.data.loc[idx, 'name'])
-        image = Image.open(img_path)
+        image = read_image(img_path)
         
         indices = self.get_indexed_caption(idx)
+        
+        if self.transform:
+            image = self.transform(image)
         
         if self.target_transform:
             label=torch.zeros((20, self.vector_size))
@@ -42,7 +48,7 @@ class CelebDataset(Dataset):
                 elif self.idx2word[w_idx]=='<pad>':
                     label[i] = torch.zeros(self.vector_size)
                 else:
-                    label[i] = torch.from_numpy(self.target_transform[self.idx2word[w_idx]])
+                    label[i] = torch.from_numpy(self.target_transform[self.idx2word[w_idx]].copy())
             
         return image, label
     
