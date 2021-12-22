@@ -2,6 +2,7 @@
 import torch
 import pandas as pd
 
+import os
 import pickle
 from config import *
 
@@ -13,6 +14,7 @@ class CaptionEmbedder():
     def __init__(self):
         self.vocab = None
         self.model = None
+        self.vector_size = VECTOR_DIM
         
     def fit(self):
         method = METHOD
@@ -51,14 +53,21 @@ class CaptionEmbedder():
         return torch.from_numpy(self.model.wv.vectors)
     
     def save(self):
-        self.model.save(EMBED_PATH + '/embed_model.pkl')
-        with open(EMBED_PATH + '/embed_vocab.pkl') as f:
-            pickle.dump(f, self.vocab)
+
+        if os.path.exists(EMBED_PATH):
+            pass
+        else:
+            os.mkdir(EMBED_PATH)
+
+        with open(EMBED_PATH + 'embed_model.pkl', 'wb') as f:
+            pickle.dump(self.model, f)
+        with open(EMBED_PATH + 'embed_vocab.pkl', 'wb') as f:
+            pickle.dump(self.vocab, f)
 
     def load(self):
-        with open(EMBED_PATH + '/embed_model.pkl', 'rb') as f:
+        with open(EMBED_PATH + 'embed_model.pkl', 'rb') as f:
             self.model = pickle.load(f)
-        with open(EMBED_PATH + '/embed_vocab.pkl', 'rb') as f:
+        with open(EMBED_PATH + 'embed_vocab.pkl', 'rb') as f:
             self.vocab = pickle.load(f)
         
     def transform_by_dict(self, idx):

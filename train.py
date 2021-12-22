@@ -26,16 +26,17 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
     begin_time = epoch_begin_time = time.time() #모델 학습 시작 시간
 
     progress_bar = tqdm(enumerate(dataloader),ncols=110)
-    for i, (images, captions) in progress_bar:
+    for i, (images, captions, vectors) in progress_bar:
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         optimizer.zero_grad()
 
         images = images.to(device)
         captions = captions.to(device)
+        vectors = vectors.to(device)
 
         with torch.cuda.amp.autocast():
-            outputs = model(images, torch.zeros((images.shape[0],19,VECTOR_DIM)).to(device))
+            outputs = model(images, vectors[:,:-1,:])
         
         loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
         
@@ -87,7 +88,7 @@ if __name__=='__main__':
         print('Embedding Start')
         ft_embedder = CaptionEmbedder()
         ft_embedder.fit()
-        ft_embedder.save()
+        # ft_embedder.save() # ERROR 잡아야 됨..
         print('Embedding Complete')
     VOCAB_SIZE = ft_embedder.vocab_size
     
@@ -111,15 +112,19 @@ if __name__=='__main__':
     
     print(model)
     
+    train_loss = []
+    
     print('Train Start')
     for epoch in range(args.epochs):
         ###################     Train    ###################
         model.train()
         epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
+        train_loss.append(epoch_loss)
         print('{}th Train Loss : {}'.format(epoch+1, epoch_loss))
-
+        
         if not SAVE_PATH in os.listdir(os.getcwd()):
             os.mkdir(SAVE_PATH)
+        
         torch.save(model, os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
         
         ###################     Valid    ###################

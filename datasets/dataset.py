@@ -37,10 +37,14 @@ class CelebDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         
-        indices = self.get_indexed_caption(idx)
-        label=indices
+        label = self.get_indexed_caption(idx)
+        
+        vectors = self.transform_by_dict(label)
+        vectors = vectors.type(torch.FloatTensor)
+        
+        label = label.type(torch.FloatTensor)
             
-        return image, label
+        return image, label, vectors
     
     def get_raw_caption(self, idx):
         label = self.data['caption'][idx]
@@ -62,8 +66,8 @@ class CelebDataset(Dataset):
     def set_embedder(self, embedder):
         self.embedder = embedder
         self.vocabs = self.embedder.vocab
-        self.word2idx = dict(self.vocabs.TEXT.vocab.stoi)
-        self.idx2word=dict([(value, key) for key, value in self.word2idx.items()])
+        self.word2idx = embedder.word2idx
+        self.idx2word = embedder.idx2word
         self.target_transform = self.transform_by_dict
         self.vector_size = embedder.vector_size
         
