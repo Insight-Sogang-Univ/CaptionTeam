@@ -11,8 +11,6 @@ class DecoderLSTM(nn.Module):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, features, captions):
-        print(features.size())
-        print(captions.size())
         embeddings = self.dropout(captions)
         embeddings = torch.cat((features.unsqueeze(1), embeddings), dim=1)
         hiddens, _ = self.lstm(embeddings)
