@@ -2,10 +2,21 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+import time
+import argparse
+from tqdm import tqdm
+
 from models import encoder, decoder
 from datasets.dataset import CelebDataset
 from datasets.preprocess.embedding import CaptionEmbedder
 from models.encoder_to_decoder import EncodertoDecoder
+
+def get_args():
+    parser = argparse.ArgumentParser(description='각종 옵션')
+    # parser.add_argument('-m','--model', required=False,
+    #                     type=str, help='모델이름 입력')
+    args = parser.parse_args()
+    return args
 
 if __name__=='__main__':
     
@@ -15,7 +26,7 @@ if __name__=='__main__':
     
     # Embedder 초기화
     ft_embedder = CaptionEmbedder(vector_size=VECTOR_DIM)
-    ft_embedder.fit('captions.csv',DIC_PATH)
+    ft_embedder.fit('data/captions.csv',DIC_PATH)
     VOCAB_SIZE = ft_embedder.vocab_size
     
     # Dataset 정의
@@ -29,7 +40,6 @@ if __name__=='__main__':
     train_loader = DataLoader(train_data, batch_size=16, shuffle=True) 
     # next, iter를 통해 loader로부터 image, caption batch 추출
     images, captions = next(iter(train_loader))
-    
     
     model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2)
     result = model(images, torch.zeros((16,20,VECTOR_DIM)))
