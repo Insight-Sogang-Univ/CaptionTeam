@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 import os
 import time
+import pickle
 import argparse
 from config import *
 from tqdm import tqdm
@@ -34,7 +35,7 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
         captions = captions.to(device)
 
         with torch.cuda.amp.autocast():
-            outputs = model(images, torch.zeros((images.shape[0],19,VECTOR_DIM)))
+            outputs = model(images, torch.zeros((images.shape[0],19,VECTOR_DIM)).to(device))
         
         loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
         
@@ -74,15 +75,21 @@ def get_args():
 
 if __name__=='__main__':
     args = get_args()
-    
+        
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Embedder 초기화
-    print('Embedding Start')
-    ft_embedder = CaptionEmbedder(vector_size=VECTOR_DIM)
-    ft_embedder.fit('data/captions.csv',DIC_PATH)
+    # Embedder 불러오기
+    if os.path.exists(EMBED_PATH):
+        with open(EMBED_PATH, 'rb+') as f:
+            ft_embedder = pickle.load(f)
+        print('Embedder Loaded')
+    else:
+        print('Embedding Start')
+        ft_embedder = CaptionEmbedder()
+        ft_embedder.fit()
+        ft_embedder.save()
+        print('Embedding Complete')
     VOCAB_SIZE = ft_embedder.vocab_size
-    print('Embedding Complete')
     
     transform = transforms.Compose(
         [
@@ -93,7 +100,7 @@ if __name__=='__main__':
     )
     
     print('DataLoading Start')
-    train_data = CelebDataset('datasets/debug/captions.csv','datasets/debug/img',embedder=ft_embedder,dic_path=DIC_PATH, transform = transform)
+    train_data = CelebDataset(LABEL_PATH,IMAGE_PATH,embedder=ft_embedder,dic_path=DIC_PATH, transform = transform)
     train_loader = DataLoader(train_data, batch_size=16, shuffle=True) 
     print('DataLoading Complete')
     
@@ -104,12 +111,15 @@ if __name__=='__main__':
     
     print(model)
     
+    print('Train Start')
     for epoch in range(args.epochs):
         ###################     Train    ###################
-        print(f'{epoch+1}th Train start')
         model.train()
         epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
         print('{}th Train Loss : {}'.format(epoch+1, epoch_loss))
+
+        if not SAVE_PATH in os.listdir(os.getcwd()):
+            os.mkdir(SAVE_PATH)
         torch.save(model, os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
         
         ###################     Valid    ###################

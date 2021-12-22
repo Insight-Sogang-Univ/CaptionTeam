@@ -1,43 +1,65 @@
 # Class for Embedding
-
 import torch
 import pandas as pd
+
+import pickle
+from config import *
+
 from gensim.models.word2vec import Word2Vec
 from gensim.models import FastText
 from datasets.preprocess.vocab import VocabBuilder
 
 class CaptionEmbedder():
-    def __init__(self,vector_size=256,window=1,min_count=2,sg=1,method="w2v"):
-        self.captions=None
-        self.vector_size=vector_size
-        self.window=window
-        self.min_count=min_count
-        self.sg=sg
-        self.method=method
-        self.vocab=None
-        self.model=None
+    def __init__(self):
+        self.vocab = None
+        self.model = None
         
-    def fit(self, caption_path, tokenizer_dic_path):
-        #Tokenize
-        self.vocab = VocabBuilder(tokenizer_dic_path)
-        self.vocab.tokenize_df(caption_path)
-        self.vocab_size = len(self.vocab.TEXT.vocab.stoi)
-        self.captions = self.vocab.captionTokens
+    def fit(self):
+        method = METHOD
+        vector_size = VECTOR_DIM
+        window = WINDOW_SIZE
+        min_count = MIN_COUNT
+        sg = SG
         
-        if self.method=='w2v':
-            self.model=Word2Vec(sentences = self.captions, vector_size = self.vector_size, \
-                window = self.window, min_count = self.min_count, sg = self.sg)
-        elif self.method=='fast':
-            self.model=FastText(sentences = self.captions, vector_size = self.vector_size, \
-                window = self.window, min_count = self.min_count, sg = self.sg)
-        self.word2idx = dict(self.vocab.TEXT.vocab.stoi)
-        self.idx2word=dict([(value, key) for key, value in self.word2idx.items()])
+        self.vocab = VocabBuilder(DIC_PATH)
+        self.vocab.tokenize_df(LABEL_PATH)
+        
+        if method=='w2v':
+            self.model=Word2Vec(sentences = self.captions, vector_size = vector_size, \
+                window = window, min_count = min_count, sg = sg)
+        elif method=='fast':
+            self.model=FastText(sentences = self.captions, vector_size = vector_size, \
+                window = window, min_count = min_count, sg = sg)
+    
+    @property
+    def captions(self):
+        return self.vocab.captionTokens
+    
+    @property
+    def vocab_size(self):
+        return len(self.vocab.TEXT.vocab.stoi)
+        
+    @property
+    def word2idx(self):
+        return dict(self.vocab.TEXT.vocab.stoi)
+    
+    @property
+    def idx2word(self):
+        return dict([(value, key) for key, value in dict(self.vocab.TEXT.vocab.stoi).items()])
             
     def return_vectors(self):
         return torch.from_numpy(self.model.wv.vectors)
     
-    def save(self, file_name):
-        self.model.save(file_name)
+    def save(self):
+        self.model.save(EMBED_PATH + '/embed_model.pkl')
+        with open(EMBED_PATH + '/embed_vocab.pkl') as f:
+            pickle.dump(f, self.vocab)
+
+    def load(self):
+        with open(EMBED_PATH + '/embed_model.pkl', 'rb') as f:
+            self.model = pickle.load(f)
+        with open(EMBED_PATH + '/embed_vocab.pkl', 'rb') as f:
+            self.vocab = pickle.load(f)
         
     def transform_by_dict(self, idx):
         if self.idx2word[idx]=='<unk>':
