@@ -42,8 +42,6 @@ class CelebDataset(Dataset):
         vectors = self.transform_by_dict(label)
         vectors = vectors.type(torch.FloatTensor)
         
-        label = label.type(torch.FloatTensor)
-            
         return image, label, vectors
     
     def get_raw_caption(self, idx):
