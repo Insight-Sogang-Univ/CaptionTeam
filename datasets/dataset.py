@@ -11,7 +11,7 @@ from torchtext.legacy.data import Iterator
 from datasets.preprocess import vocab
 
 class CelebDataset(Dataset):
-    def __init__(self, captions_path:str, img_dir:str, embedder=None, fixed_length=20, dic_path=None):
+    def __init__(self, captions_path:str, img_dir:str, embedder=None, fixed_length=20, dic_path=None, transform=None):
         '''
         captions_path : dataframe which contains file path - 'head','name' and caption tokens - 'tokenized_captions'
         ''' 
@@ -20,12 +20,9 @@ class CelebDataset(Dataset):
 
         self.captionTokens = vocab.VocabBuilder(dic_path, fixed_length).tokenize_df(captions_path)
         self.fixed_length = fixed_length
+        self.transform = transform
         
         self.set_embedder(embedder)
-        
-        self.transform = transforms.Compose([
-            transforms.Resize((299,299))
-            ])
                                 
     def __len__(self):
         return len(self.data)
@@ -35,15 +32,13 @@ class CelebDataset(Dataset):
         img_path = os.path.join(self.img_dir, self.data.loc[idx, 'head'], self.data.loc[idx, 'name'])
         image = read_image(img_path)
         
-        indices = self.get_indexed_caption(idx)
+        image = image.type(torch.FloatTensor)
         
         if self.transform:
             image = self.transform(image)
         
-        if self.target_transform:
-            label=self.target_transform(indices)
-        else:
-            label=indices
+        indices = self.get_indexed_caption(idx)
+        label=indices
             
         return image, label
     
