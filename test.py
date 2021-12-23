@@ -11,6 +11,10 @@ from config import *
 
 from models.encoder_to_decoder import EncodertoDecoder
 
+import numpy as np
+from PIL import ImageFont, ImageDraw, Image
+import cv2
+
 
 def get_args():
     parser = argparse.ArgumentParser(description = '각종 옵션')
@@ -54,6 +58,19 @@ if __name__ == '__main__':
     #사진에 캡션을 더해서 띄우기 # Open cv 참고
     import matplotlib.pyplot as plt
     # 원 이미지 출력
-    plt.imshow(torch.permute(image, (1,2,0)))
-    plt.show()
+   
+    img = torch.permute(image, (1,2,0))
+    img = img.numpy()
     
+    img = Image.fromarray(img)
+    
+    draw = ImageDraw.Draw(img) 
+    font=ImageFont.truetype("font/malgun.ttf",15) 
+    org=(50,400) 
+    draw.text(org,caption,font=font,fill=(225,225,225))
+
+    img = np.array(img)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    cv2.imshow('imgwithcaption', img)
+    cv2.waitKey(0) 
+
