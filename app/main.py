@@ -1,22 +1,29 @@
+import cv2
 from typing import Text
+
 import kivy
 kivy.require('2.0.0') # replace with your current kivy version !
 
-from kivy.uix.popup import Popup
 from kivy.app import App
+from kivy.clock import Clock
+from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
-from camera_pc import KivyCamera
+from kivy.graphics.texture import Texture
 from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.properties import ObjectProperty, NumericProperty
 
+from camera_pc import KivyCamera
+
 class MyFirstScreen(GridLayout):
-    def __init__(self, **kwargs):
+    def __init__(self, camera, **kwargs):
         super(MyFirstScreen, self).__init__(**kwargs)
+        self.camera = camera
+        
         self.cols=1
 
         self.img=Image(source='mansoo.jpeg')
@@ -32,7 +39,9 @@ class MyFirstScreen(GridLayout):
 
     def on_pressed_cam(self, instance):
         #KivyCamera().run()
-        popup=Popup(content=KivyCamera().run())
+        
+        popup=Popup(content=self.camera.layout)
+        #popup=Popup(content=KivyCamera().run())
         popup.open()
         
         #KivyCamera().stop()
@@ -103,6 +112,9 @@ class MyFirstScreen(GridLayout):
 
 
     def on_pressed_hm(self, instance):
+        '''
+        초기화면으로 가자~
+        '''
         content=BoxLayout(orientation='vertical')
         cam_button=Button(text='Click here!')
         content.add_widget(cam_button)
@@ -121,8 +133,8 @@ class MyFirstScreen(GridLayout):
 
 class MyApp(App):
     def build(self):
-        return MyFirstScreen() ## 혹은 여기
+        camera = KivyCamera()
+        return MyFirstScreen(camera) ## 혹은 여기
 
 if __name__=='__main__':
     MyApp().run() ## 여기서 초기화면을?
-
