@@ -114,6 +114,7 @@ class CameraScreen(CaptionScreen):
         self.page.add_widget(self.save_button)
         
         self.home_button=Button(text='Back',size_hint=(.5, .5))
+        self.save_button.bind(on_press=lambda x: self.to_screen('Home'))
         self.page.add_widget(self.home_button)
         
         self.add_widget(self.page)
