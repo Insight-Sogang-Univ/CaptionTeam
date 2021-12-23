@@ -1,11 +1,11 @@
+import cv2
+
 import kivy
-from kivy.app import App
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.uix.button import Button
 from kivy.graphics.texture import Texture
-import cv2
 from kivy.uix.camera import Camera
 
 # pc에서는 작동하는 버전
