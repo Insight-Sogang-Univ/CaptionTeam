@@ -14,10 +14,8 @@ from models.encoder_to_decoder import EncodertoDecoder
 
 def get_args():
     parser = argparse.ArgumentParser(description = '각종 옵션')
-    parser.add_argument('-lr', '--learning_rate', required=True,
+    parser.add_argument('-lr', '--learning_rate', required=False,
                         type=float, help='모델 이름 입력')
-    parser.add_argument('-e', '--epochs', required=True,
-                        type=int, help='학습 횟수 입력')
     args = parser.parse_args()
     return args
 
@@ -30,7 +28,8 @@ if __name__ == '__main__':
     img_path = r"datasets\debug\img\bluedragon\bluedragon1.jpg"
     image = read_image(img_path)
     
-    image = image.type(torch.FloatTensor)
+    _image = image.clone()
+    _image = image.type(torch.FloatTensor)
     
     transform = transforms.Compose(
         [
@@ -40,14 +39,21 @@ if __name__ == '__main__':
         ]
     )
 
-    image = transform(image)
+    _image = transform(_image)
     
     #모델 불러오기
-    model = torch.load(SAVE_PATH, 'checkpoint_epoch_'+str(args.epochs)+'.pt')
-    model.eval()
+    # model = torch.load(SAVE_PATH, 'checkpoint_epoch_'+str(args.epochs)+'.pt')
+    # model.eval()
     
     #모델에 사진 넣기
-    vocabulary = None
-    embedder = None
-    caption = model.caption_image(image, vocabulary, embedder, max_length=50)
-
+    # vocabulary = None
+    # embedder = None
+    # caption = model.caption_image(image, vocabulary, embedder, max_length=50)
+    caption = 'Hello My name is GA-YOUNG.'
+    
+    #사진에 캡션을 더해서 띄우기 # Open cv 참고
+    import matplotlib.pyplot as plt
+    # 원 이미지 출력
+    plt.imshow(torch.permute(image, (1,2,0)))
+    plt.show()
+    
