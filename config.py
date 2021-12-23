@@ -2,7 +2,8 @@
 
 ###    PATH   ###
 LABEL_PATH = 'datasets/debug/captions.csv'
-IMAGE_PATH = 'datasets/debug/img'
+# IMAGE_PATH = 'datasets/debug/img'
+IMAGE_FILE = 'datasets/debug/images.hdf5'
 EMBED_PATH = 'outputs/'
 DIC_PATH   = 'C:\mecab\mecab-ko-dic'
 

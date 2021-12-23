@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import torch
+import h5py
 from gensim.models import Word2Vec
 #from PIL import Image
 from torch.utils.data import Dataset
@@ -11,12 +12,12 @@ from torchtext.legacy.data import Iterator
 from datasets.preprocess import vocab
 
 class CelebDataset(Dataset):
-    def __init__(self, captions_path:str, img_dir:str, embedder=None, fixed_length=20, dic_path=None, transform=None):
+    def __init__(self, captions_path:str, img_file:str, embedder=None, fixed_length=20, dic_path=None, transform=None):
         '''
         captions_path : dataframe which contains file path - 'head','name' and caption tokens - 'tokenized_captions'
         ''' 
         self.data = pd.read_csv(captions_path)
-        self.img_dir = img_dir
+        self.img_file = h5py.File(img_file)
 
         self.captionTokens = vocab.VocabBuilder(dic_path, fixed_length).tokenize_df(captions_path)
         self.fixed_length = fixed_length
@@ -28,11 +29,19 @@ class CelebDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        
-        img_path = os.path.join(self.img_dir, self.data.loc[idx, 'head'], self.data.loc[idx, 'name'])
-        image = read_image(img_path)
-        
-        image = image.type(torch.FloatTensor)
+        # start = time.time()
+        # try:
+        #     image = read_image(img_path)
+        # except:
+        #     print('Error Occured.')
+        #     return torch.zeros((3,299,299)), torch.zeros(20), torch.zeros((20,256))
+            
+        # read_image Error Handling
+        # if image.shape[0]==4:
+        #     image = image[:3]
+
+        image = self.img_file.get(self.data.loc[idx, 'head']).get(self.data.loc[idx, 'name'])
+        image = torch.from_numpy(image[:]).type(torch.FloatTensor)
         
         if self.transform:
             image = self.transform(image)

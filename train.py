@@ -27,6 +27,15 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
 
     progress_bar = tqdm(enumerate(dataloader),ncols=110)
     for i, (images, captions, vectors) in progress_bar:
+        
+        indices = []
+        for i in range(images.shape[0]):
+          if not torch.equal(images[i],torch.zeros((3,299,299))):
+            indices.append(i)
+        images = images[indices]
+        captions = captions[indices]
+        vectors = vectors[indices]
+
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         optimizer.zero_grad()
@@ -101,7 +110,7 @@ if __name__=='__main__':
     )
     
     print('DataLoading Start')
-    train_data = CelebDataset(LABEL_PATH,IMAGE_PATH,embedder=ft_embedder,dic_path=DIC_PATH, transform = transform)
+    train_data = CelebDataset(LABEL_PATH, IMAGE_FILE, embedder=ft_embedder, dic_path=DIC_PATH, transform = transform)
     train_loader = DataLoader(train_data, batch_size=16, shuffle=True) 
     print('DataLoading Complete')
     
