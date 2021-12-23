@@ -3,7 +3,7 @@
 ###    PATH   ###
 LABEL_PATH = 'datasets/debug/captions.csv'
 IMAGE_PATH = 'datasets/debug/img'
-EMBED_PATH = 'data/embedder.pkl'
+EMBED_PATH = 'outputs/'
 DIC_PATH   = 'C:\mecab\mecab-ko-dic'
 
 ### EMBEDDING ###
