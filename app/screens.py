@@ -1,4 +1,6 @@
 
+import kivy
+kivy.require('2.0.0')
 from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
@@ -7,7 +9,12 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
 
-from camera import KivyCamera
+import cv2
+from kivy.clock import Clock
+from kivy.graphics.texture import Texture
+from kivy.uix.camera import Camera
+
+#from camera import KivyCamera
 from config import *
 
 class CaptionScreen(Screen):
@@ -23,7 +30,7 @@ class HomeScreen(CaptionScreen):
         self.page = GridLayout(padding=10)
         self.page.cols = 1
         
-        self.img=Image(source='mansoo.jpeg')
+        self.img=Image(source='insight.jpg')
         
         self.page.add_widget(self.img)
 
@@ -104,24 +111,41 @@ class HomeScreen(CaptionScreen):
 class CameraScreen(CaptionScreen):
     def __init__(self, **kwargs):
         super(CameraScreen, self).__init__(**kwargs)
-        self.camera = KivyCamera()
-        
+        #self.camera = KivyCamera()
+        #KivyCamera()
+        #popup=Popup(content=KivyCamera, auto_dismiss=False, size_hint=(.5,.5))
+        #popup.open()
         self.page = GridLayout(padding=10)
         self.page.cols = 1
-        
+
+        self.img1=Image()
+        self.page.add_widget(self.img1)
+
         self.save_button=Button(text='Capture!',size_hint=(.5, .5))
         self.save_button.bind(on_press=self.take_picture)
         self.page.add_widget(self.save_button)
+
+        self.button_home=Button(text="Back", size_hint=(.5, .5))
+        self.button_home.bind(on_press=lambda x: self.to_screen('Home'))
+        self.page.add_widget(self.button_home)
         
-        self.home_button=Button(text='Back',size_hint=(.5, .5))
-        self.save_button.bind(on_press=lambda x: self.to_screen('Home'))
-        self.page.add_widget(self.home_button)
-        
+        self.capture = cv2.VideoCapture(0)
+        Clock.schedule_interval(self.update, 1.0/33.0)
+
         self.add_widget(self.page)
-        
+
+    def update(self, *args):
+        ret, frame = self.capture.read()
+        self.image_frame=frame
+        buf = cv2.flip(frame, 0).tostring()
+        texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt="bgr")
+        texture.blit_buffer(buf, colorfmt="bgr", bufferfmt="ubyte")
+        self.img1.texture = texture
+
     def take_picture(self, instance):
         ##### 사진을 찍고 임시 파일로 저장한다 #####
-        
+        imange_name='pic.png'
+        cv2.imwrite(imange_name, self.image_frame)
         
         #####       로딩팝업을 띄운다          #####
         content=BoxLayout(orientation='vertical')
@@ -135,9 +159,10 @@ class CameraScreen(CaptionScreen):
         # 출력된 파일들 경로에 저장
     
         
-        #####    끝나면 pop up 닫기           #####
+        #####    끝나면 pop up 닫기          #####
         popup.dismiss()
         #####      다음 화면으로 이동          #####
+        ##### 12.24아직까진 이 과정이 빛의 속도로 지나감 #####
         self.to_screen('Result')
         
         
