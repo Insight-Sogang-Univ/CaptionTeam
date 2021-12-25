@@ -10,6 +10,7 @@ from kivy.graphics.texture import Texture
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivy.properties import ObjectProperty, NumericProperty
 
+
 from screens import *
 
 class CaptionApp(App):
@@ -22,7 +23,8 @@ class CaptionApp(App):
         screen['Home'] = HomeScreen(name='Home')
         screen['Camera'] = CameraScreen(name='Camera')
         screen['Result'] = ResultScreen(name='Result')
-        
+        screen['File'] = FileScreen(name='File')
+
         # Add Screens
         for scr in screen.values():
             sm.add_widget(scr)
