@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import transforms
 from torch.utils.data import DataLoader
+from torch.utils.data.dataset import random_split
 
 import os, time, pickle, argparse
 import pandas as pd
@@ -14,8 +15,8 @@ from models.encoder_to_decoder import EncodertoDecoder
 
 def train(model, dataloader, criterion, optimizer, epoch=0):
     log_format = "epoch: {:4d}, step: {:4d}/{:4d}, loss: {:.6f}, " \
-                              "cer: {:.2f}, elapsed: {:.2f}s {:.2f}m, lr: {:.6f}"
-    cers = []
+                              "elapsed: {:.2f}s {:.2f}m, lr: {:.6f}"
+
     epoch_loss_total = 0.
     total_num = 0
     timestep = 0
@@ -63,7 +64,7 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
             progress_bar.set_description(
                 log_format.format(epoch+1,
                 timestep, len(dataloader), loss,
-                0, elapsed, epoch_elapsed,
+                elapsed, epoch_elapsed,
                 optimizer.state_dict()['param_groups'][0]['lr'])
             )
             begin_time = time.time()
@@ -72,10 +73,37 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
     return train_loss
 
 def validate(model, dataloader, criterion):
-    #### Validation 작성!!! 희진아 부탁해~ ####
-    pass
-
-    ### loss를 반환하게.
+    epoch_loss_total = 0.
+    total_num = 0
+    progress_bar = tqdm(enumerate(dataloader),ncols=110)
+    for j, (images, captions, vectors) in progress_bar:
+        
+        indices = []
+        for j in range(images.shape[0]):
+            if not torch.equal(images[j],torch.zeros((3,299,299))):
+                indices.append(j)
+        images = images[indices]
+        captions = captions[indices]
+        vectors = vectors[indices]
+        
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        images = images.to(device)
+        captions = captions.to(device)
+        vectors = vectors.to(device)
+    
+        with torch.cuda.amp.autocast():
+            outputs = model(images, vectors[:,:-1,:])
+        
+        loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
+        
+        total_num += len(images)
+        epoch_loss_total += loss.item()
+        
+        torch.cuda.empty_cache()
+    
+    valid_loss = epoch_loss_total / len(dataloader)
+    return valid_loss
 
 
 def get_args():
@@ -118,15 +146,17 @@ if __name__=='__main__':
     
     print('DataLoading Start')
     dataset = CelebDataset(df, IMAGE_FILE, embedder=ft_embedder, fixed_length=FIXED_LENGTH, transform = transform)
-    ###################################
-    # 여기에 train/valid 나누는 코드 넣어주기
-    ###################################
+    
+    train_length=int((1-VALID_RATE)*len(dataset))
+    valid_length=len(dataset)-train_length
+    train_data, valid_data = random_split(dataset, [train_length,valid_length])
+    
     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
     valid_loader = DataLoader(valid_data, batch_size=BATCH_SIZE, shuffle=False)
     print('DataLoading Complete')
     
     model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2).to(device)
-    criterion = nn.CrossEntropyLoss(ignore_index = train_data.w2i['<pad>'])
+    criterion = nn.CrossEntropyLoss(ignore_index = dataset.w2i['<pad>'])
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
     
@@ -141,16 +171,21 @@ if __name__=='__main__':
         train_epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
         train_loss.append(train_epoch_loss)
         
-        if not SAVE_PATH in os.listdir(os.getcwd()):
-            os.mkdir(SAVE_PATH)
-        
-        torch.save(model, os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
-        
         ###################     Valid    ###################
         model.eval()
         valid_epoch_loss = validate(model, valid_loader, criterion)
         valid_loss.append(valid_epoch_loss)
-        print('{}th Train Loss : {}, Valid Loss : {}'.format(epoch+1, train_epoch_loss, valid_epoch_loss))
         
-        # Scheduling
+        ###################   EPOCH END   #################
+        home = os.getcwd()
+        for path in SAVE_PATH.split('/'):
+            if not os.path.exists(path):
+                os.mkdir(path)
+            os.chdir(path)
+        os.chdir(home)
+        
+        torch.save(model, os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
+        
         if scheduler: scheduler.step(valid_epoch_loss)
+        
+        print('{}th Train Loss : {}, Valid Loss : {}'.format(epoch+1, train_epoch_loss, valid_epoch_loss))
