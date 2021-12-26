@@ -3,33 +3,24 @@
 import torch
 import torch.nn as nn
 from torchvision import transforms
-from torch.utils.data import DataLoader
 from torchvision.io import read_image
-
-import argparse
-from config import *
-
-from models.encoder_to_decoder import EncodertoDecoder
+from PIL import ImageFont, ImageDraw, Image
 
 import numpy as np
-from PIL import ImageFont, ImageDraw, Image
-import cv2
+import argparse, cv2
+
+from config.test import *
+from datasets.embedding import CaptionEmbedder
 
 
 def get_args():
     parser = argparse.ArgumentParser(description = '각종 옵션')
-    parser.add_argument('-lr', '--learning_rate', required=False,
-                        type=float, help='모델 이름 입력')
+    parser.add_argument('-p', '--image_path', default=r"data\debug\img\bluedragon\bluedragon1.jpg",
+                        type=str, help='입력 이미지 경로')
     args = parser.parse_args()
     return args
 
-
-if __name__ == '__main__':
-    ### 여기에 내용을 쓰는 거다
-    args = get_args()
-    
-    #사진 받기
-    img_path = r"datasets\debug\img\bluedragon\bluedragon1.jpg"
+def test(img_path, save_path=None, save=True):
     image = read_image(img_path)
     
     _image = image.clone()
@@ -46,19 +37,15 @@ if __name__ == '__main__':
     _image = transform(_image)
     
     #모델 불러오기
-    # model = torch.load(SAVE_PATH, 'checkpoint_epoch_'+str(args.epochs)+'.pt')
-    # model.eval()
+    model = torch.load(MODEL_PATH)
+    model.eval()
     
     #모델에 사진 넣기
-    # vocabulary = None
-    # embedder = None
-    # caption = model.caption_image(image, vocabulary, embedder, max_length=50)
+    embedder = CaptionEmbedder.load(EMBED_PATH)
+    caption = model.caption_image(image, embedder, max_length=FIXED_LENGTH)
     caption = 'Hello My name is GA-YOUNG.'
     
-    #사진에 캡션을 더해서 띄우기 # Open cv 참고
-    import matplotlib.pyplot as plt
-    # 원 이미지 출력
-   
+    #사진에 캡션 추가
     img = torch.permute(image, (1,2,0))
     img = img.numpy()
     
@@ -71,6 +58,15 @@ if __name__ == '__main__':
 
     img = np.array(img)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    cv2.imshow('imgwithcaption', img)
-    cv2.waitKey(0) 
+    
+    if save:
+        cv2.imwrite(save_path, img)
+    else:
+        cv2.imshow('imgwithcaption', img)
+        cv2.waitKey(0) 
+
+if __name__ == '__main__':
+    args = get_args()
+    
+    test(args.img_path, False)
 

@@ -16,7 +16,7 @@ class EncodertoDecoder(nn.Module):
         outputs = self.decoderLSTM(features, captions)
         return outputs
     
-    def caption_image(self, image, vocabulary, embedder, max_length=50):
+    def caption_image(self, image, embedder, max_length=50):
         result_caption = []
         
         with torch.no_grad():
@@ -31,10 +31,10 @@ class EncodertoDecoder(nn.Module):
                 result_caption.append(predicted.item())
                 
                 device = x.device
-                x = embedder.transform_by_dict(predicted.item()).unsqueeze(0).unsqueeze(0)
+                x = embedder.vectorize_caption(predicted.item()).unsqueeze(0).unsqueeze(0)
                 x = x.to(device)
                 
-                if vocabulary.itos[predicted.item()] == "<pad>":
+                if embedder.i2w[predicted.item()] == "<pad>":
                     break
         
-        return [vocabulary.itos[idx] for idx in result_caption]
+        return [embedder.i2w[idx] for idx in result_caption]
