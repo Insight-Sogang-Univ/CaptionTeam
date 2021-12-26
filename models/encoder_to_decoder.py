@@ -20,7 +20,6 @@ class EncodertoDecoder(nn.Module):
         result_caption = []
         
         with torch.no_grad():
-            print(image.size())
             x = self.encoderInception3(image.unsqueeze(0)).unsqueeze(1)
             states = None
             
@@ -30,11 +29,10 @@ class EncodertoDecoder(nn.Module):
                 predicted = output.argmax(-1)
                 
                 result_caption.append(predicted.item())
-                print(predicted)
-                print(type(predicted))
-                print(predicted.size())
                 
+                device = x.device
                 x = embedder.transform_by_dict(predicted.item()).unsqueeze(0).unsqueeze(0)
+                x = x.to(device)
                 
                 if vocabulary.itos[predicted.item()] == "<pad>":
                     break
