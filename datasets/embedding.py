@@ -5,7 +5,7 @@ import pandas as pd
 import os
 import pickle
 import sys
-from config import DIC_PATH
+from config.config import DIC_PATH
 sys.path.insert(0,'..')
 
 from preprocess.vocab import VocabBuilder2

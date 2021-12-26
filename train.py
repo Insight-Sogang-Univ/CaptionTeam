@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 import os, time, pickle, argparse
 import pandas as pd
-from config import *
+from config.config import *
 from tqdm import tqdm
 
 from datasets.dataset import CelebDataset
@@ -25,13 +25,13 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
     progress_bar = tqdm(enumerate(dataloader),ncols=110)
     for i, (images, captions, vectors) in progress_bar:
         
-        indices = []
-        for i in range(images.shape[0]):
-          if not torch.equal(images[i],torch.zeros((3,299,299))):
-            indices.append(i)
-        images = images[indices]
-        captions = captions[indices]
-        vectors = vectors[indices]
+        # indices = []
+        # for i in range(images.shape[0]):
+        #   if not torch.equal(images[i],torch.zeros((3,299,299))):
+        #     indices.append(i)
+        # images = images[indices]
+        # captions = captions[indices]
+        # vectors = vectors[indices]
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -122,7 +122,7 @@ if __name__=='__main__':
     # 여기에 train/valid 나누는 코드 넣어주기
     ###################################
     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
-    valid_laoder = DataLoader(valid_data, batch_size=BATCH_SIZE, shuffle=False)
+    valid_loader = DataLoader(valid_data, batch_size=BATCH_SIZE, shuffle=False)
     print('DataLoading Complete')
     
     model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2).to(device)

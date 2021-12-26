@@ -7,14 +7,13 @@ from torch.utils.data import DataLoader
 from torchvision.io import read_image
 
 import argparse
-from config import *
+from config.config import *
 
 from models.encoder_to_decoder import EncodertoDecoder
 
 import numpy as np
 from PIL import ImageFont, ImageDraw, Image
 import cv2
-
 
 def get_args():
     parser = argparse.ArgumentParser(description = '각종 옵션')
