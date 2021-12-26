@@ -43,7 +43,6 @@ def test(img_path, save_path=None, save=True):
     #모델에 사진 넣기
     embedder = CaptionEmbedder.load(EMBED_PATH)
     caption = model.caption_image(image, embedder, max_length=FIXED_LENGTH)
-    caption = 'Hello My name is GA-YOUNG.'
     
     #사진에 캡션 추가
     img = torch.permute(image, (1,2,0))
