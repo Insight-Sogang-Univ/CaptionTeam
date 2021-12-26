@@ -9,15 +9,14 @@ from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
-#from pract import Example
+
 import cv2
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
 from kivy.uix.camera import Camera
 
 ##new
-from kivy.uix.filechooser import FileChooser, FileChooserIconView, FileChooserListView
-from kivy.uix.textinput import TextInput
+from kivy.uix.filechooser import  FileChooserIconView
 
 #from camera import KivyCamera
 from config import *
@@ -25,9 +24,7 @@ from config import *
 from kivy.core.window import Window
 from kivy.lang import Builder
 
-#from kivymd.app import MDApp
-#from kivymd.uix.filemanager import MDFileManager
-#from kivymd.toast import toast
+from model.test import test
 
 
 class CaptionScreen(Screen):
@@ -76,25 +73,6 @@ class HomeScreen(CaptionScreen):
             ## press button 됐을 때, restart_board 실행됨. pop up 닫기 위함.
         lv_button.bind(on_press=lambda *args:self.restart(popups, *args))
     
-    ##결과 화면
-    def restart(self, *args):
-        args[0].dismiss() #전 팝업창 닫힘
-
-        self.respic=Image(source='mansoo.jpeg')
-        self.add_widget(self.respic)
-        self.add_widget(Label(text='Yunju is smiling at the beach.'))
-        
-        self.button_dw=Button(text="Download", font_size=40)
-        self.button_dw.bind(on_press=self.on_pressed_dw)
-        self.add_widget(self.button_dw)
-
-        self.button_hm=Button(text="Home", font_size=40)
-        self.button_hm.bind(on_press=self.__init__)
-        self.add_widget(self.button_hm)
-
-        self.remove_widget(self.img)
-        self.remove_widget(self.button_pt)
-        self.remove_widget(self.button_cam)
 
     def on_pressed_dw(self, instance):
         content=BoxLayout(orientation='vertical')
@@ -145,25 +123,34 @@ class FileScreen(CaptionScreen):
         ### why '시도'? -> /Users/iyunju/Documents 이렇게 최종 파일이 선택되지 않은 상태면
         ### 에러 메세지 출력되고, 최종 선택한 파일 경로를 알 수 없음
         ### (경로 경로 끝에 최종으로 이미지 파일을 더블클릭했을 때 제대로 띄워지고, 그게 최종 경로)
-        self.my_image.source=self.fichoo.selection[0]
-        ### 그래서 사용자가 수동으로,, 사용할 이미지 더블클릭 후 이 버튼 누르면 test로 넘어감
+        if self.fichoo.selection[0][-3:] in ['png','jpg']:
+            self.my_image.source=self.fichoo.selection[0]
+        else:
+            self.my_image.source="mansoo.jpeg"
+        ### 그래서 사용자가 수동으로,, 사용할 이미지 더블클릭 후 이 버튼 누르면 final로 넘어감
         self.bt=Button(text="Select", size_hint=(.1, .1))
-        self.bt.bind(on_press=self.test)
+        self.bt.bind(on_press=self.final)
         self.add_widget(self.bt)
 
     ### 선택한 파일이 최종 선택 파일이기 때문에 이 경로 저장 (지금은 print로 해놓음)
     ### 사용자는 select 눌러서 여기에 경로 넘겨준 후 Go to Result 버튼 눌러야 함.
-    def test(self,val):
+    def final(self,val):
+        image = cv2.imread(self.fichoo.selection[0], cv2.IMREAD_COLOR)
+        self.image_path='/Users/iyunju/Documents/INSIGHT/플젝_1학기/KIVY/app/temp_photos/pic.png'
+        cv2.imwrite(self.image_path,image)
+        test(self.image_path,self.image_path, True)
         print(self.fichoo.selection[0])
 
+    #def refresh(self):
+    #    self.clear_widgets([self.manager.get_screen('Result')])
+        #screen={}
+        #screen['Result'] = ResultScreen(name='Result')
+     #   self.add_widget(ResultScreen(name='Result'))
 
 class CameraScreen(CaptionScreen):
     def __init__(self, **kwargs):
         super(CameraScreen, self).__init__(**kwargs)
-        #self.camera = KivyCamera()
-        #KivyCamera()
-        #popup=Popup(content=KivyCamera, auto_dismiss=False, size_hint=(.5,.5))
-        #popup.open()
+    
         self.page = GridLayout(padding=10)
         self.page.cols = 1
 
@@ -192,10 +179,13 @@ class CameraScreen(CaptionScreen):
         self.img1.texture = texture
 
     def take_picture(self, instance):
-        ##### 사진을 찍고 임시 파일로 저장한다 ##### --> 경로 설정해야 할 필요 있을지도..
-        imange_name='pic.png'
-        cv2.imwrite(imange_name, self.image_frame)
+        ##### 사진을 찍고 임시 파일로 저장한다 #####
+        self.image_path=r'/Users/iyunju/Documents/INSIGHT/플젝_1학기/KIVY/app/temp_photos/pic.png'
+        cv2.imwrite(self.image_path, self.image_frame)
         
+        #####    임시 파일을 모델에 입력한다   #####
+        test(self.image_path,self.image_path, True)
+
         #####       로딩팝업을 띄운다          #####
         content=BoxLayout(orientation='vertical')
         content.add_widget(Label(text='Loading...'))
@@ -203,25 +193,30 @@ class CameraScreen(CaptionScreen):
                         auto_dismiss=True, size_hint=(.5,.5))
         popup.open()
         
-        #####    임시 파일을 모델에 입력한다   #####
-        
         # 출력된 파일들 경로에 저장
     
         
         #####    끝나면 pop up 닫기          #####
         popup.dismiss()
         #####      다음 화면으로 이동          #####
-        ##### 12.24아직까진 이 과정이 빛의 속도로 지나감 #####
         self.to_screen('Result')
         
+
+    #def refresh(self):
+     #   self.clear_widgets([self.manager.get_screen('Result')])
+        #screen={}
+        #screen['Result'] = ResultScreen(name='Result')
+      #  self.add_widget(ResultScreen(name='Result'))
+
         
 class ResultScreen(CaptionScreen):
     def __init__(self, **kwargs):
         super(ResultScreen, self).__init__(**kwargs)
+        
         self.page = GridLayout(padding=10)
         self.page.cols = 1
-        
-        self.img = Image(source=IMG_SAVE_PATH)
+        image_path=r'/Users/iyunju/Documents/INSIGHT/플젝_1학기/KIVY/app/temp_photos/pic_captioned.png'
+        self.img = Image(source=image_path)
         self.page.add_widget(self.img)
 
         self.button_sv=Button(text="Save", font_size=40)
@@ -241,7 +236,7 @@ class ResultScreen(CaptionScreen):
         self.page.add_widget(self.button_pt)
         
         self.add_widget(self.page)
-        
+
     def on_pressed_sv(self):
         ###### 임시 파일 이미지를 저장 ######
         pass
