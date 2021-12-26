@@ -3,16 +3,13 @@ import torch.nn as nn
 from torchvision import transforms
 from torch.utils.data import DataLoader
 
-import os
-import time
-import pickle
-import argparse
+import os, time, pickle, argparse
+import pandas as pd
 from config import *
 from tqdm import tqdm
 
-from models import encoder, decoder
 from datasets.dataset import CelebDataset
-from datasets.preprocess.embedding import CaptionEmbedder
+from datasets.embedding import CaptionEmbedder
 from models.encoder_to_decoder import EncodertoDecoder
 
 def train(model, dataloader, criterion, optimizer, epoch=0):
@@ -71,8 +68,15 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
             )
             begin_time = time.time()
     
-    train_loss = epoch_loss_total / total_num
+    train_loss = epoch_loss_total / len(dataloader)
     return train_loss
+
+def validate(model, dataloader, criterion):
+    #### Validation 작성!!! 희진아 부탁해~ ####
+    pass
+
+    ### loss를 반환하게.
+
 
 def get_args():
     parser = argparse.ArgumentParser(description='각종 옵션')
@@ -88,18 +92,21 @@ if __name__=='__main__':
         
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Embedder 불러오기
-    if os.path.exists(EMBED_PATH):
+    # Embedder & data 불러오기
+    if os.path.exists(EMBED_PATH) and os.path.exists(EMBED_LABEL):
         with open(EMBED_PATH, 'rb+') as f:
             ft_embedder = pickle.load(f)
+        df = pd.read_csv(EMBED_LABEL)
         print('Embedder Loaded')
     else:
         print('Embedding Start')
-        ft_embedder = CaptionEmbedder()
-        ft_embedder.fit()
-        # ft_embedder.save() # ERROR 잡아야 됨..
+        ft_embedder = CaptionEmbedder(VECTOR_DIM, WINDOW_SIZE, MIN_COUNT, SG)
+        df = pd.read_csv(LABEL_PATH)
+        df = ft_embedder.fit(df, 'fast')
+        ft_embedder.save(EMBED_PATH)
+        df.to_csv(EMBED_LABEL, index=False)
         print('Embedding Complete')
-    VOCAB_SIZE = ft_embedder.vocab_size
+    VOCAB_SIZE = len(ft_embedder.w2i)
     
     transform = transforms.Compose(
         [
@@ -110,26 +117,29 @@ if __name__=='__main__':
     )
     
     print('DataLoading Start')
-    train_data = CelebDataset(LABEL_PATH, IMAGE_FILE, embedder=ft_embedder, dic_path=DIC_PATH, transform = transform)
-    train_loader = DataLoader(train_data, batch_size=16, shuffle=True) 
+    dataset = CelebDataset(df, IMAGE_FILE, embedder=ft_embedder, fixed_length=FIXED_LENGTH, transform = transform)
+    ###################################
+    # 여기에 train/valid 나누는 코드 넣어주기
+    ###################################
+    train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
+    valid_laoder = DataLoader(valid_data, batch_size=BATCH_SIZE, shuffle=False)
     print('DataLoading Complete')
     
     model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2).to(device)
-    criterion = nn.CrossEntropyLoss(ignore_index = train_data.word2idx['<pad>'])
+    criterion = nn.CrossEntropyLoss(ignore_index = train_data.w2i['<pad>'])
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
     
     print(model)
     
     train_loss = []
-    
+    valid_loss = []
     print('Train Start')
     for epoch in range(args.epochs):
         ###################     Train    ###################
         model.train()
-        epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
-        train_loss.append(epoch_loss)
-        print('{}th Train Loss : {}'.format(epoch+1, epoch_loss))
+        train_epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
+        train_loss.append(train_epoch_loss)
         
         if not SAVE_PATH in os.listdir(os.getcwd()):
             os.mkdir(SAVE_PATH)
@@ -137,7 +147,10 @@ if __name__=='__main__':
         torch.save(model, os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
         
         ###################     Valid    ###################
-        # model.eval()
-        # with torch.no_grad():
-        #     pass
-        # if scheduler: scheduler.step(val_loss)
+        model.eval()
+        valid_epoch_loss = validate(model, valid_loader, criterion)
+        valid_loss.append(valid_epoch_loss)
+        print('{}th Train Loss : {}, Valid Loss : {}'.format(epoch+1, train_epoch_loss, valid_epoch_loss))
+        
+        # Scheduling
+        if scheduler: scheduler.step(valid_epoch_loss)
