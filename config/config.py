@@ -27,5 +27,4 @@ FIXED_LENGTH=20
 
 #### TRAIN ####
 BATCH_SIZE = 64
-
-SAVE_PATH  = 'pt'
+SAVE_PATH  = DATA_FOLDER+'/pt'
