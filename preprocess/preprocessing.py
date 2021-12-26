@@ -1,15 +1,18 @@
-import labeling, image_process, naming
+import labeling, image_process, naming, argparse
 
 if __package__ is None:
         import sys
         from os import path
         sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
         
-from config import *
+from config.config import *
 # import sys
 # sys.path.insert(0,'..')
 
 if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', '--num', required=False, type=int, help='number of images for making hdf5 set')
+    args = parser.parse_args()
     
     print('Preprocessing Start')
     
@@ -18,7 +21,7 @@ if __name__=='__main__':
     print('Cleaning Complete')
     
     print('Caption Preprocessing...')
-    label_path = labeling.modify_label(RAW_LABEL, DATA_FOLDER, NAME_PATH)
+    label_path = labeling.modify_label(RAW_LABEL, DATA_FOLDER, NAME_PATH, num=args.num)
     print('Caption Preprocessing Complete')
     
     print('Images to HDF5...')

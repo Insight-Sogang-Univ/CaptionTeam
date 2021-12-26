@@ -27,18 +27,11 @@ class CelebDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        try:
-            image = self.img_file.get(self.data.loc[idx, 'head']).get(self.data.loc[idx, 'name'])
-            image = torch.from_numpy(image[:]).type(torch.FloatTensor)
-        
-            if self.transform:
-                image = self.transform(image)
-        
-        except:
-            image = torch.zeros((3,299,299), dtype=torch.FloatTensor)
-            with open('error_log.txt', 'a') as f:
-                f.write(','.join([idx,self.data.loc[idx,'head'],self.data.loc[idx,'name']]))
-                f.write('\n')
+        image = self.img_file.get(self.data.loc[idx, 'head']).get(self.data.loc[idx, 'name'])
+        image = torch.from_numpy(image[:]).type(torch.FloatTensor)
+    
+        if self.transform:
+            image = self.transform(image)
         
         # Index
         label = list(map(int,self.data.loc[idx, 'indexed'].split()))
@@ -51,7 +44,7 @@ class CelebDataset(Dataset):
         # Vectorize
         vectors = torch.zeros((self.fixed_length, self.embedder.vector_size))
         for i, idx in enumerate(label):
-            vectors[i] = self._vectorize_caption(idx.item())
+            vectors[i] = self.vectorize_caption(idx.item())
         vectors = vectors.type(torch.FloatTensor)
         
         return image, label, vectors
@@ -60,7 +53,7 @@ class CelebDataset(Dataset):
         label = self.data.loc[idx,'caption']
         return label
     
-    def _vectorize_caption(self, idx):
+    def vectorize_caption(self, idx):
         if self.i2w[idx]=='<unk>':
             return torch.zeros(self.embedder.vector_size)
         elif self.i2w[idx]=='<pad>':

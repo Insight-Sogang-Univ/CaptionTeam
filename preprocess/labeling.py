@@ -4,10 +4,11 @@ sys.path.insert(0,'..')
 
 import argparse
 import pandas as pd
+from numpy import random
 
 import naming
 
-def modify_label(csv_path, new_path, names, name='홍길동'):
+def modify_label(csv_path, new_path, names, name='홍길동', num=None):
     
     captions = pd.read_csv(csv_path)
     names = pd.read_csv(names)
@@ -20,6 +21,11 @@ def modify_label(csv_path, new_path, names, name='홍길동'):
     # 외국인 위주 데이터 제거
     overseas = ['academy', 'cannes', 'fawards', 'fmovie', 'fmusic', 'oversea_celebrity']
     captions = captions[~captions['head'].isin(overseas)].reset_index(drop=True)
+    
+    # NUM limitation
+    if num:
+        chosen_indices = sorted(random.choice(captions.index, num, replace=False))
+        captions = captions.iloc[chosen_indices]
     
     # 이름을 '홍길동으로 대체'
     captions = naming.replace_names(captions, names, repName=name)
@@ -41,14 +47,12 @@ def modify_label(csv_path, new_path, names, name='홍길동'):
 def clean_data(csv_path, error_path):
     df = pd.read_csv(csv_path)
     
-    # try:
     with open(error_path, 'r') as f:
         errors = f.readlines()
     errors = [error[:-1] for error in errors]
     df = df[~df['name'].isin(errors)]
+    
     df.to_csv(csv_path, index=False)
-    # except:
-    #     pass
 
 def get_args():
     parser = argparse.ArgumentParser(description='Options')
