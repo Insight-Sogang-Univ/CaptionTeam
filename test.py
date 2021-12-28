@@ -13,9 +13,12 @@ from config.test_config import *
 from datasets.embedding import CaptionEmbedder
 
 def test(img_path, save_path=None, save=True):
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
     image = read_image(img_path)
     
-    _image = image.clone()
+    _image = image.clone().to(device)
     _image = image.type(torch.FloatTensor)
     
     transform = transforms.Compose(
@@ -29,7 +32,7 @@ def test(img_path, save_path=None, save=True):
     _image = transform(_image)
     
     #모델 불러오기
-    model = torch.load(MODEL_PATH)
+    model = torch.load(MODEL_PATH).to(device)
     model.eval()
     
     #모델에 사진 넣기
