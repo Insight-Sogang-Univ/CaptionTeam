@@ -44,7 +44,7 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
         
         with torch.cuda.amp.autocast():
             outputs = model(images, vectors[:,:-1,:])
-        print(outputs.size())
+        
         loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
         
         loss.backward()
@@ -119,7 +119,7 @@ def get_args():
 
 if __name__=='__main__':
     args = get_args()
-        
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Embedder & data 불러오기
