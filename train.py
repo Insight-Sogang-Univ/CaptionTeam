@@ -41,10 +41,10 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
         images = images.to(device)
         captions = captions.to(device)
         vectors = vectors.to(device)
-
+        
         with torch.cuda.amp.autocast():
             outputs = model(images, vectors[:,:-1,:])
-        
+        print(outputs.size())
         loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
         
         loss.backward()
@@ -109,9 +109,11 @@ def validate(model, dataloader, criterion):
 def get_args():
     parser = argparse.ArgumentParser(description='각종 옵션')
     parser.add_argument('-lr','--learning_rate', required=True,
-                        type=float, help='모델이름 입력')
+                        type=float, help='학습률 입력')
     parser.add_argument('-e','--epochs', required=True,
                         type=int, help='학습횟수 입력')
+    parser.add_argument('-m','--model', default='lstm',
+                        type=str, help='사용 모델명 입력')
     args = parser.parse_args()
     return args
 
@@ -155,7 +157,7 @@ if __name__=='__main__':
     valid_loader = DataLoader(valid_data, batch_size=BATCH_SIZE, shuffle=False)
     print('DataLoading Complete')
     
-    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2).to(device)
+    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2, model=args.model, embedder=ft_embedder).to(device)
     criterion = nn.CrossEntropyLoss(ignore_index = dataset.w2i['<pad>'])
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')

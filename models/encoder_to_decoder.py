@@ -3,14 +3,21 @@ import torch
 import torch.nn as nn
 
 from models.encoder import EncoderInception3
-from models.decoder import DecoderLSTM
+from models.decoder import DecoderLSTM, DecoderAttention
 
 class EncodertoDecoder(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, num_layers):
+    def __init__(self, embed_size, hidden_size, vocab_size, num_layers, model='lstm', embedder=None):
         super(EncodertoDecoder, self).__init__()
+        self.model = model
+        if model=='att' and embedder==None:
+            assert 'Attention model needs embedder'
+            
         self.encoderInception3 = EncoderInception3(embed_size)
-        self.decoderLSTM = DecoderLSTM(embed_size, hidden_size, vocab_size, num_layers)
-        
+        if model=='lstm':
+            self.decoderLSTM = DecoderLSTM(embed_size, hidden_size, vocab_size, num_layers)
+        elif model=='att':
+            self.decoderLSTM = DecoderAttention(embedder, embed_size, hidden_size, vocab_size, num_layers)
+            
     def forward(self, images, captions):
         features = self.encoderInception3(images)
         outputs = self.decoderLSTM(features, captions)
@@ -23,18 +30,22 @@ class EncodertoDecoder(nn.Module):
             x = self.encoderInception3(image.unsqueeze(0)).unsqueeze(1)
             states = None
             
-            for _ in range(max_length):
-                hiddens, states = self.decoderLSTM.lstm(x, states)
-                output = self.decoderLSTM.linear(hiddens.unsqueeze(0))
-                predicted = output.argmax(-1)
-                
-                result_caption.append(predicted.item())
-                
-                device = x.device
-                x = embedder.vectorize_caption(predicted.item()).unsqueeze(0).unsqueeze(0)
-                x = x.to(device)
-                
-                if embedder.i2w[predicted.item()] == "<pad>":
-                    break
-        
-        return [embedder.i2w[idx] for idx in result_caption]
+            if self.model=='lstm':
+                for _ in range(max_length):
+                    hiddens, states = self.decoderLSTM.lstm(x, states)
+                    output = self.decoderLSTM.linear(hiddens.unsqueeze(0))
+                    predicted = output.argmax(-1)
+                    
+                    result_caption.append(predicted.item())
+                    
+                    device = x.device
+                    x = embedder.vectorize_caption(predicted.item()).unsqueeze(0).unsqueeze(0)
+                    x = x.to(device)
+                    
+                    if embedder.i2w[predicted.item()] == "<pad>":
+                        break
+            
+                return [embedder.i2w[idx] for idx in result_caption]
+            
+            elif self.model=='att':
+                self.decoderLSTM.greedy_search(x, max_length)
