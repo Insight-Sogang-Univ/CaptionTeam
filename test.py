@@ -46,8 +46,13 @@ def test(img_path, save_path=None, save=True):
     img = Image.fromarray(img)
     
     draw = ImageDraw.Draw(img) 
-    font=ImageFont.truetype("font/malgun.ttf",15) 
-    org=(50,400) 
+    font=ImageFont.truetype("font/malgun.ttf",15)
+    
+    w, h = draw.textsize(caption, font=font)
+    img_W = img.size[0]
+    img_H = img.size[1]
+    
+    org=((img_W-w)/2, img_H-(img_H*0.1)) 
     draw.text(org,caption,font=font,fill=(225,225,225))
 
     img = np.array(img)
