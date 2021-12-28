@@ -1,0 +1,1 @@
+IMG_SAVE_PATH = 'output/result.jpg'
