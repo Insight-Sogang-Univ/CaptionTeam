@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 import pickle
 import sys
-from config.config import DIC_PATH
+from config.train_config import DIC_PATH
 sys.path.insert(0,'..')
 
 from preprocess.vocab import VocabBuilder2

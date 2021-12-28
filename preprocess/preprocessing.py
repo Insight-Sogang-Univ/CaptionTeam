@@ -5,7 +5,7 @@ if __package__ is None:
         from os import path
         sys.path.append( path.dirname( path.dirname( path.abspath(__file__) ) ) )
         
-from config.config import *
+from config.train_config import *
 # import sys
 # sys.path.insert(0,'..')
 

@@ -9,16 +9,8 @@ from PIL import ImageFont, ImageDraw, Image
 import numpy as np
 import argparse, cv2
 
-from config.test import *
+from config.test_config import *
 from datasets.embedding import CaptionEmbedder
-
-
-def get_args():
-    parser = argparse.ArgumentParser(description = '각종 옵션')
-    parser.add_argument('-p', '--image_path', default=r"data\debug\img\bluedragon\bluedragon1.jpg",
-                        type=str, help='입력 이미지 경로')
-    args = parser.parse_args()
-    return args
 
 def test(img_path, save_path=None, save=True):
     image = read_image(img_path)
@@ -42,7 +34,7 @@ def test(img_path, save_path=None, save=True):
     
     #모델에 사진 넣기
     embedder = CaptionEmbedder.load(EMBED_PATH)
-    caption = model.caption_image(image, embedder, max_length=FIXED_LENGTH)
+    caption = model.caption_image(_image, embedder, max_length=FIXED_LENGTH)
     
     #사진에 캡션 추가
     img = torch.permute(image, (1,2,0))
@@ -64,8 +56,15 @@ def test(img_path, save_path=None, save=True):
         cv2.imshow('imgwithcaption', img)
         cv2.waitKey(0) 
 
+def get_args():
+    parser = argparse.ArgumentParser(description = '각종 옵션')
+    parser.add_argument('-p', '--image_path', default=r"data\debug\img\bluedragon\bluedragon1.jpg",
+                        type=str, help='입력 이미지 경로')
+    args = parser.parse_args()
+    return args
+
 if __name__ == '__main__':
     args = get_args()
     
-    test(args.img_path, False)
+    test(args.image_path, save=False)
 

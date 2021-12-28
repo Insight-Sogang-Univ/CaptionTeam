@@ -6,7 +6,7 @@ from torch.utils.data.dataset import random_split
 
 import os, time, pickle, argparse
 import pandas as pd
-from config.config import *
+from config.train_config import *
 from tqdm import tqdm
 
 from datasets.dataset import CelebDataset
