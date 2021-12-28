@@ -9,7 +9,7 @@ from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
-
+import os
 import cv2
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
@@ -24,15 +24,18 @@ from config import *
 from kivy.core.window import Window
 from kivy.lang import Builder
 
-from model.test import test
-
+from test import test
 
 class CaptionScreen(Screen):
     def __init__(self, **kwargs):
         super(CaptionScreen, self).__init__(**kwargs)
         
     def to_screen(self, scr_name):
+        self.manager.get_screen(scr_name).update_layout()
         self.manager.current = scr_name
+    
+    def update_layout(self):
+        pass
 
 class HomeScreen(CaptionScreen):
     def __init__(self, **kwargs):
@@ -40,7 +43,7 @@ class HomeScreen(CaptionScreen):
         self.page = GridLayout(padding=10)
         self.page.cols = 1
         
-        self.img=Image(source='insight.jpg')
+        self.img=Image(source='imgs/insight.jpg')
         
         self.page.add_widget(self.img)
 
@@ -101,6 +104,7 @@ class FileScreen(CaptionScreen):
         ### 파일 탐색기
         self.fichoo = FileChooserIconView(size_hint_y = 0.8)
         self.fichoo.dirselect=True
+
         ### 더블클릭 할 때마다 selected 호출됨
         self.fichoo.bind(selection=self.selected)
         self.page.add_widget(self.fichoo)
@@ -111,7 +115,7 @@ class FileScreen(CaptionScreen):
         self.page.add_widget(self.button_home)
 
         ### 결과 버튼 (밑에서 최종 파일 클릭 후, select 버튼 누른 후에 눌러야함)
-        self.button_res=Button(text="Go to Result", size_hint=(.5, .5))
+        self.button_res=Button(text="OK", size_hint=(.5, .5))
         self.button_res.bind(on_press=lambda x: self.to_screen('Result'))
         self.page.add_widget(self.button_res)
 
@@ -128,7 +132,7 @@ class FileScreen(CaptionScreen):
         else:
             self.my_image.source="mansoo.jpeg"
         ### 그래서 사용자가 수동으로,, 사용할 이미지 더블클릭 후 이 버튼 누르면 final로 넘어감
-        self.bt=Button(text="Select", size_hint=(.1, .1))
+        self.bt=Button(text="Choose", size_hint=(.1, .1))
         self.bt.bind(on_press=self.final)
         self.add_widget(self.bt)
 
@@ -136,9 +140,13 @@ class FileScreen(CaptionScreen):
     ### 사용자는 select 눌러서 여기에 경로 넘겨준 후 Go to Result 버튼 눌러야 함.
     def final(self,val):
         image = cv2.imread(self.fichoo.selection[0], cv2.IMREAD_COLOR)
-        self.image_path='/Users/iyunju/Documents/INSIGHT/플젝_1학기/KIVY/app/temp_photos/pic.png'
+        self.image_path='imgs/pic.png'
+        #print("now in file",i)
+        self.save_path='imgs/pic_captioned.png'
+        #self.save_path=save_path+str(i)+'.png'
+        
         cv2.imwrite(self.image_path,image)
-        test(self.image_path,self.image_path, True)
+        test(self.image_path,self.save_path, True)
         print(self.fichoo.selection[0])
 
     #def refresh(self):
@@ -148,6 +156,7 @@ class FileScreen(CaptionScreen):
      #   self.add_widget(ResultScreen(name='Result'))
 
 class CameraScreen(CaptionScreen):
+    
     def __init__(self, **kwargs):
         super(CameraScreen, self).__init__(**kwargs)
     
@@ -180,62 +189,82 @@ class CameraScreen(CaptionScreen):
 
     def take_picture(self, instance):
         ##### 사진을 찍고 임시 파일로 저장한다 #####
-        self.image_path=r'/Users/iyunju/Documents/INSIGHT/플젝_1학기/KIVY/app/temp_photos/pic.png'
+        self.image_path='imgs/pic.png'
+        self.save_path='imgs/pic_captioned.png'
+        #print("now in camera",i)
+        #self.save_path=save_path+str(i)+'.png'
         cv2.imwrite(self.image_path, self.image_frame)
         
         #####    임시 파일을 모델에 입력한다   #####
-        test(self.image_path,self.image_path, True)
+        test(self.image_path,self.save_path, True)
 
+        self.to_screen('Result')
         #####       로딩팝업을 띄운다          #####
-        content=BoxLayout(orientation='vertical')
-        content.add_widget(Label(text='Loading...'))
-        popup=Popup(title='Loading...', content=content, 
-                        auto_dismiss=True, size_hint=(.5,.5))
-        popup.open()
+        #content=BoxLayout(orientation='vertical')
+        #content.add_widget(Label(text='Loading...'))
+        #popup=Popup(title='Loading...', content=content, 
+                       # auto_dismiss=True, size_hint=(.5,.5))
+        #popup.open()
         
         # 출력된 파일들 경로에 저장
-    
         
         #####    끝나면 pop up 닫기          #####
-        popup.dismiss()
+       # popup.dismiss()
         #####      다음 화면으로 이동          #####
-        self.to_screen('Result')
         
-
-    #def refresh(self):
-     #   self.clear_widgets([self.manager.get_screen('Result')])
-        #screen={}
-        #screen['Result'] = ResultScreen(name='Result')
-      #  self.add_widget(ResultScreen(name='Result'))
-
+    
         
 class ResultScreen(CaptionScreen):
     def __init__(self, **kwargs):
         super(ResultScreen, self).__init__(**kwargs)
+        ### 얘네가 그때그때 실행되기ㅔ 어딘가에 추가 시켜서 그때그때 다시 실행되게.
+        ### 함수 추가해보자
+
+        self.path='imgs/pic_captioned.png'
+        #image_path=path+str(i)+'.png'
         
+        self.update_layout()
+
+    def update_layout(self):
+        self.clear_widgets()
+
         self.page = GridLayout(padding=10)
         self.page.cols = 1
-        image_path=r'/Users/iyunju/Documents/INSIGHT/플젝_1학기/KIVY/app/temp_photos/pic_captioned.png'
-        self.img = Image(source=image_path)
-        self.page.add_widget(self.img)
 
+        self.image=Image(source='imgs/pic_captioned.png')
+        self.image.reload()
+ 
+        self.button_home=Button(text="Home", size_hint=(.5, .5))
+        self.button_home.bind(on_press=self.get_image)
+        
         self.button_sv=Button(text="Save", font_size=40)
         self.button_sv.bind(on_press=self.on_pressed_sv)
-        self.page.add_widget(self.button_sv)
 
         self.button_rt1=Button(text="Retry Camera", font_size=40)
         self.button_rt1.bind(on_press=lambda x: self.to_screen('Camera'))
-        self.page.add_widget(self.button_rt1)
-
+        
         self.button_rt2=Button(text="Retry Album", font_size=40)
         self.button_rt2.bind(on_press=lambda x: self.to_screen('File'))
-        self.page.add_widget(self.button_rt2)
-
+        
         self.button_pt=Button(text="Home", font_size=40)
         self.button_pt.bind(on_press=lambda x: self.to_screen('Home'))
+
+        self.page.add_widget(self.image)
+        self.page.add_widget(self.button_home)
+        self.page.add_widget(self.button_sv)
+        self.page.add_widget(self.button_rt1)
+        self.page.add_widget(self.button_rt2)
         self.page.add_widget(self.button_pt)
-        
+
         self.add_widget(self.page)
+
+
+    def get_image(self, *args):
+        image_path='imgs/pic_captioned.png'
+        img = cv2.imread(image_path, cv2.COLOR_BGR2RGB)
+        cv2.imshow('Result image',img)
+        cv2.waitKey(0) 
+        cv2.destroyAllWindows()
 
     def on_pressed_sv(self):
         ###### 임시 파일 이미지를 저장 ######
