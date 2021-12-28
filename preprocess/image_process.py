@@ -9,8 +9,10 @@ def jpg_to_hdf5(csv_path, save_path, img_path, error_path='error_log.txt'):
     df = pd.read_csv(csv_path)
     
     with h5py.File(save_path, 'w') as hdf:
+        with open(error_path, 'w') as e:
+            pass
         for i, folder in enumerate(df['head'].unique()):
-            print(f"Saving {i+1}/{len(df['head'].unique())}")
+            print(f"Saving {folder} {i+1}/{len(df['head'].unique())}")
             f = hdf.create_group(folder)
             for img in tqdm(df.loc[df['head']==folder,'name'].values):
                 try:
