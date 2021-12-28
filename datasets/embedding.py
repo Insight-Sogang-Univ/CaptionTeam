@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-import os
+import torch
 import pickle
 import sys
 from config.config import DIC_PATH
@@ -21,6 +21,10 @@ class CaptionEmbedder():
         self.window = window
         self.min_count = min_count
         self.sg = sg
+        
+    @property
+    def i2w(self):
+        return dict([(value, key) for key, value in self.w2i.items()])
         
     def fit(self, df, method='fast'):
         
@@ -53,4 +57,12 @@ class CaptionEmbedder():
         self.w2i = VocabBuilder2.make_dict(df['tokenized'], self.min_count)
         df = builder.indexize_df(df, self.w2i)
         return df
+        
+    def vectorize_caption(self, idx):
+        if self.i2w[idx]=='<unk>':
+            return torch.zeros(self.vector_size)
+        elif self.i2w[idx]=='<pad>':
+            return torch.zeros(self.vector_size)
+        else:
+            return torch.from_numpy(self.model.wv[self.i2w[idx]].copy())
     

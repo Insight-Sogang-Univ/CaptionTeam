@@ -17,7 +17,7 @@ class CelebDataset(Dataset):
 
         self.embedder = embedder
         self.w2i = self.embedder.w2i
-        self.i2w = dict([(value, key) for key, value in self.w2i.items()])
+        self.i2w = self.embedder.i2w
         
         self.fixed_length = fixed_length
         self.transform = transform
@@ -54,9 +54,4 @@ class CelebDataset(Dataset):
         return label
     
     def vectorize_caption(self, idx):
-        if self.i2w[idx]=='<unk>':
-            return torch.zeros(self.embedder.vector_size)
-        elif self.i2w[idx]=='<pad>':
-            return torch.zeros(self.embedder.vector_size)
-        else:
-            return torch.from_numpy(self.embedder.model.wv[self.i2w[idx]].copy())
+        self.embedder.vectorize_caption(idx)
