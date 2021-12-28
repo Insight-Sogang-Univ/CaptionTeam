@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
 
 import os, time, pickle, argparse
+import pdb
 import pandas as pd
 from config.train_config import *
 from tqdm import tqdm
@@ -44,7 +45,7 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
         
         with torch.cuda.amp.autocast():
             outputs = model(images, vectors[:,:-1,:])
-        
+        # pdb.set_trace()
         loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
         
         loss.backward()
@@ -114,6 +115,8 @@ def get_args():
                         type=int, help='학습횟수 입력')
     parser.add_argument('-m','--model', default='lstm',
                         type=str, help='사용 모델명 입력')
+    parser.add_argument('-re','--resume_from',
+                        help='지난 학습 모델 불러오기')
     args = parser.parse_args()
     return args
 
@@ -164,9 +167,23 @@ if __name__=='__main__':
     
     print(model)
     
+    if args.resume_from:
+        # 저장했던 중간 모델 정보를 읽습니다.
+        model_data = torch.load(args.resume_from)
+        model.load_state_dict(model_data['model_state_dict'])
+        
+        # optimizer도 중간에 저장했던 값들로 치환합니다.
+        optimizer.load_state_dict(model_data['optimizer_state_dict'])
+        
+        # 지금 시작할 epoch은 기존 epoch + 1 즉 다음 epoch입니다.
+        start_epoch = model_data['epoch']+1
+        
+    else:
+        start_epoch = 0
+    
     train_loss = []
     valid_loss = []
-    print('Train Start')
+    print(f'Train Start from {start_epoch+1}th epoch...')
     for epoch in range(args.epochs):
         ###################     Train    ###################
         model.train()
@@ -186,7 +203,11 @@ if __name__=='__main__':
             os.chdir(path)
         os.chdir(home)
         
-        torch.save(model, os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
+        torch.save({
+            'epoch': epoch,
+            'optimizer_state_dict': optimizer.state_dict(),
+            'model_state_dict': model.state_dict(),
+            },os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
         
         if scheduler: scheduler.step(valid_epoch_loss)
         
