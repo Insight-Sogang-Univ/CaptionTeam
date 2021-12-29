@@ -11,8 +11,9 @@ import argparse, cv2
 
 from config.test_config import *
 from datasets.embedding import CaptionEmbedder
+from models.encoder_to_decoder import EncodertoDecoder
 
-def test(img_path, save_path=None, save=True):
+def test(img_path, save_path=None, save=True, model='lstm'):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
@@ -31,13 +32,19 @@ def test(img_path, save_path=None, save=True):
 
     _image = transform(_image)
     
+    #임베딩 불러오기
+    embedder = CaptionEmbedder.load(EMBED_PATH)
+    VOCAB_SIZE = len(embedder.w2i)
+    
     #모델 불러오기
-    model = torch.load(MODEL_PATH).to(device)
+    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2, model=model, embedder=embedder).to(device)
+    model_data = torch.load(MODEL_PATH)
+    model.load_state_dict(model_data['model_state_dict'])
     model.eval()
     
     #모델에 사진 넣기
-    embedder = CaptionEmbedder.load(EMBED_PATH)
     caption = ''.join(model.caption_image(_image, embedder, max_length=FIXED_LENGTH))
+    print(caption)
     
     #사진에 캡션 추가
     img = torch.permute(image, (1,2,0))
@@ -68,11 +75,13 @@ def get_args():
     parser = argparse.ArgumentParser(description = '각종 옵션')
     parser.add_argument('-p', '--image_path', default=r"data\debug\img\bluedragon\bluedragon1.jpg",
                         type=str, help='입력 이미지 경로')
+    parser.add_argument('-m', '--model', default='lstm',
+                        type=str, help='모델명')
     args = parser.parse_args()
     return args
 
 if __name__ == '__main__':
     args = get_args()
     
-    test(args.image_path, save=False)
+    test(args.image_path, save=False, model=args.model)
 
