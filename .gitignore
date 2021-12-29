@@ -1,5 +1,6 @@
 /img
 refs/
+/data/debug/pt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
