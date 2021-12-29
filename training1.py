@@ -6,9 +6,8 @@ from torch.utils.data.dataset import random_split
 
 import os, time, pickle, argparse
 import pandas as pd
-from config.train_config import *
+from config.config import *
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 from datasets.dataset import CelebDataset
 from datasets.embedding import CaptionEmbedder
@@ -107,13 +106,11 @@ def validate(model, dataloader, criterion):
 
 def get_args():
     parser = argparse.ArgumentParser(description='각종 옵션')
-    parser.add_argument('-lr','--learning_rate',
+    parser.add_argument('-lr','--learning_rate', required=True,
                         type=float, help='모델이름 입력')
-    parser.add_argument('-e','--epochs',
+    parser.add_argument('-e','--epochs', required=True,
                         type=int, help='학습횟수 입력')
-    parser.add_argument('-re','--resume_from',help='훈련 이어서 하고 싶은 파일명 입력')
-    parser.add_argument('-sg','--show_graph',help='학습그래프 보고 싶은 파일명 입력')
-    #현재 불러올 파일이 있을 때 파일명을 data/debug/pt/k1_checkpoint_epoch_숫자.pt로 써줘야함.
+    parser.add_argument('--resume_from')
     args = parser.parse_args()
     return args
 
@@ -157,85 +154,65 @@ if __name__=='__main__':
     valid_loader = DataLoader(valid_data, batch_size=BATCH_SIZE, shuffle=False)
     print('DataLoading Complete')
     
-    if args.learning_rate:
-        if args.epochs:
-            model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2).to(device)
-            criterion = nn.CrossEntropyLoss(ignore_index = dataset.w2i['<pad>'])
-            optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
-            print(model)
-            print('Train Start')
-            
-            if args.resume_from:
-                # 저장했던 중간 모델 정보를 읽기
-                model_data = torch.load(args.resume_from)
-                model.load_state_dict(model_data['model_state_dict'])
-                
-                # optimizer도 중간에 저장했던 값들로 치환
-                optimizer.load_state_dict(model_data['optimizer_state_dict'])
-                
-                # 지금 시작할 epoch은 기존 epoch + 1, 즉 다음 epoch이다.
-                start_epoch = model_data['epoch']+1
-                L=model_data['loss_list']
-                epochs=model_data['epoch_list']
-                train_loss=model_data['train_loss_list']
-                valid_loss=model_data['valid_loss_list']
-            else:
-                start_epoch = 0
-                L=[]
-                epochs=[]
-                train_loss = []
-                valid_loss = []
     
-            for epoch in range(start_epoch, args.epochs):
-                epochs.append(epoch+1)
-                ###################     Train    ###################
-                model.train()
-                train_epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
-                train_loss.append(train_epoch_loss)
-                ###################     Valid    ###################
-                model.eval()
-                valid_epoch_loss = validate(model, valid_loader, criterion)
-                valid_loss.append(valid_epoch_loss)
-                ###################   EPOCH END   #################
-                
-                if scheduler: scheduler.step(valid_epoch_loss)
-                
-                print('{}th Train Loss : {}, Valid Loss : {}'.format(epoch+1, train_epoch_loss, valid_epoch_loss))
-                L.append([epoch+1, train_epoch_loss, valid_epoch_loss])
-                
-                home = os.getcwd()
-                for path in SAVE_PATH.split('/'):
-                    if not os.path.exists(path):
-                        os.mkdir(path)
-                    os.chdir(path)
-                os.chdir(home)
-                
-                
-                torch.save({
-                    'epoch': epoch,
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'model_state_dict': model.state_dict(),
-                    'loss_list':L,
-                    'epoch_list':epochs,
-                    'train_loss_list':train_loss,
-                    'valid_loss_list':valid_loss
-                    },os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
-    else:
-        pass
+    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2).to(device)
+    criterion = nn.CrossEntropyLoss(ignore_index = dataset.w2i['<pad>'])
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
     
-    if args.show_graph:
-        model_data = torch.load(args.show_graph)
-        epochs=model_data['epoch_list']
-        train_loss=model_data['train_loss_list']
-        valid_loss=model_data['valid_loss_list']
+    ##############
+    
+    ##############
+    
+    print(model)
+    
+    train_loss = []
+    valid_loss = []
+    print('Train Start')
+    
+    if args.resume_from:
+        # 저장했던 중간 모델 정보를 읽습니다.
+        model_data = torch.load(args.resume_from)
+        model.load_state_dict(model_data['model_state_dict'])
         
-        fig, loss_ax = plt.subplots()
-        loss_ax.plot(epochs,train_loss, 'y', label='train loss')
-        loss_ax.plot(epochs,valid_loss,'r', label='valid loss')
-        loss_ax.set_xlabel('epoch')
-        loss_ax.set_ylabel('loss')
-        loss_ax.legend(loc='upper right')
-        plt.show()
+        # optimizer도 중간에 저장했던 값들로 치환합니다.
+        optimizer.load_state_dict(model_data['optimizer_state_dict'])
+        
+        # 지금 시작할 epoch은 기존 epoch + 1 즉 다음 epoch입니다.
+        start_epoch = model_data['epoch']+1
+        
     else:
-        pass
+        start_epoch = 0
+    
+    for epoch in range(start_epoch, args.epochs):
+        ###################     Train    ###################
+        model.train()
+        train_epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
+        train_loss.append(train_epoch_loss)
+        ###################     Valid    ###################
+        model.eval()
+        valid_epoch_loss = validate(model, valid_loader, criterion)
+        valid_loss.append(valid_epoch_loss)
+        ###################   EPOCH END   #################
+        
+        
+        home = os.getcwd()
+        for path in SAVE_PATH.split('/'):
+            if not os.path.exists(path):
+                os.mkdir(path)
+            os.chdir(path)
+        os.chdir(home)
+        
+        torch.save({
+            'epoch': epoch,
+            'optimizer_state_dict': optimizer.state_dict(),
+            'model_state_dict': model.state_dict(),
+            },os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
+        
+        
+        
+        if scheduler: scheduler.step(valid_epoch_loss)
+        
+        print('{}th Train Loss : {}, Valid Loss : {}'.format(epoch+1, train_epoch_loss, valid_epoch_loss))
+        
+        
