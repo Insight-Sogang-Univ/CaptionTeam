@@ -65,39 +65,39 @@ class DecoderAttention(nn.Module):
         # create embeddings for captions of size (batch, sqe_len, embed_dim)
         # embed = self.embeddings(captions)
         h, c = self.init_hidden(features)
-        seq_len = captions.size(1)
+        seq_len = captions.size(1) + 1 #### 사이즈 조정
         feature_size = features.size(1)
         batch_size = features.size(0)
         # these tensors will store the outputs from lstm cell and attention weights
         outputs = torch.zeros(batch_size, seq_len, self.vocab_size)
         attention_weights = torch.zeros(batch_size, seq_len, feature_size)
-
+        
         # scheduled sampling for training
         for t in range(seq_len):
-            sample_prob = 0.0 if t == 0 else 0.5
-            use_sampling = np.random.random() < sample_prob
-            if use_sampling == False:
-                word_embed = captions[:, t, :]
-            context, attention_weight = self.attention(features, h)
-            # input_concat shape at time step t = (batch, embedding_dim + hidden_dim)
-            input_concat = torch.cat([word_embed, context], 1)
-            h, c = self.lstm(input_concat, (h, c))
-            h = self.drop(h)
-            output = self.linear(h)
-            if use_sampling == True:
-                # use sampling temperature to amplify the values before applying softmax
-                scaled_output = output / self.sample_temp
-                scoring = F.log_softmax(scaled_output, dim=1)
-                top_idx = scoring.topk(1)[1]
-                ## 이거 확인하기
-                print(top_idx)
-                word_embed = self.embeddings(int(top_idx)).squeeze(1)
+            if t==0:
+                _, attention_weight = self.attention(features, h)
+                h = self.drop(h)
+                output = self.linear(h)
+            else:
+                sample_prob = 0.0 if t == 1 else 0.5
+                use_sampling = np.random.random() < sample_prob
+                if use_sampling == False:
+                    word_embed = captions[:, t-1, :]
+                context, attention_weight = self.attention(features, h)
+                # input_concat shape at time step t = (batch, embedding_dim + hidden_dim)
+                input_concat = torch.cat([word_embed, context], 1)
+                h, c = self.lstm(input_concat, (h, c))
+                h = self.drop(h)
+                output = self.linear(h)
+                if use_sampling == True:
+                    # use sampling temperature to amplify the values before applying softmax
+                    scaled_output = output / self.sample_temp
+                    scoring = F.log_softmax(scaled_output, dim=1)
+                    top_idx = scoring.topk(1)[1]
+                    word_embed = torch.stack([self.embeddings(x.item()) for x in top_idx.squeeze()]).squeeze(1)
             outputs[:, t, :] = output
-            print(attention_weights.size())
-            print(attention_weights[:,t,:].size())
-            print(attention_weight.size())
             attention_weights[:, t, :] = attention_weight
-        return outputs, attention_weights
+        return outputs  #, attention_weights
 
     def init_hidden(self, features):
         """Initializes hidden state and cell memory using average feature vector.
@@ -141,7 +141,7 @@ class DecoderAttention(nn.Module):
             input_word = top_idx
             if (len(sentence) >= max_sentence or top_idx == 1):
                 break
-        return sentence, weights
+        return sentence #, weights
      
 class BahdanauAttention(nn.Module):
     

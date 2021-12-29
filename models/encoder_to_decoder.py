@@ -48,4 +48,4 @@ class EncodertoDecoder(nn.Module):
                 return [embedder.i2w[idx] for idx in result_caption]
             
             elif self.model=='att':
-                self.decoderLSTM.greedy_search(x, max_length)
+                return self.decoderLSTM.greedy_search(x, max_length)
