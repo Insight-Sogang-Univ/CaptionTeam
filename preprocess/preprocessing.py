@@ -25,9 +25,9 @@ if __name__=='__main__':
     labeling.stop_words(label_path, STOP_WORDS)
     print('Caption Preprocessing Complete')
     
-#     print('Images to HDF5...')
-#     image_process.jpg_to_hdf5(label_path, IMAGE_FILE, RAW_IMAGE, ERROR_LOGS)
-#     print('HDF5 Created')
+    print('Images to HDF5...')
+    image_process.jpg_to_hdf5(label_path, IMAGE_FILE, RAW_IMAGE, ERROR_LOGS)
+    print('HDF5 Created')
     
     print('Trimming Error Images...')
     labeling.clean_data(label_path, ERROR_LOGS)

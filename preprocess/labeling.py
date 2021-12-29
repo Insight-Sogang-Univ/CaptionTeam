@@ -9,7 +9,7 @@ from numpy import random
 import naming
 
 def stop_words(csv_path, file_path):
-    csv_path = 'data/debug/captions.csv'
+    
     captions = pd.read_csv(csv_path)
     with open(file_path, 'r', encoding='utf8') as f:
         stopwords = f.read().split()

@@ -28,6 +28,7 @@ def replace_name(caption:str, names:list, repName:str='홍길동'):
     # Connect the names
     patterns = '|'.join(names)
     # Get cleared caption
+    
     caption = re.sub(patterns, repName, caption)
     #caption = drop_duplicated_names(caption)
     return caption
