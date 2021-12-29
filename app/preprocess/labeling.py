@@ -8,6 +8,25 @@ from numpy import random
 
 import naming
 
+def stop_words(csv_path, file_path):
+    
+    captions = pd.read_csv(csv_path)
+    with open(file_path, 'r', encoding='utf8') as f:
+        stopwords = f.read().split()
+    stopwords = pd.DataFrame(stopwords, columns=['name'])
+    captions = naming.replace_names(captions, stopwords, repName='', length=0)
+    
+    def del_first_name(x):
+        new_x = x.split(' ')
+        if new_x[0]=='홍길동' or new_x[0]=='홍길동-홍길동':
+            x = ' '.join(new_x[1:])
+        return x
+    
+    captions['caption'] = captions['caption'].apply(lambda x: del_first_name(x))
+    captions.to_csv(csv_path, index=False)
+
+    
+
 def modify_label(csv_path, new_path, names, name='홍길동', num=None):
     
     captions = pd.read_csv(csv_path)
@@ -58,6 +77,8 @@ def get_args():
     parser = argparse.ArgumentParser(description='Options')
     parser.add_argument('-nf','--names', required=True,
                         type=str, help='Name File path')
+    parser.add_argument('-s','--stopwords', action='store_true', 
+                        help='Stopwords File path')
     parser.add_argument('-n','--name', default='홍길동',
                         type=str, help='New Name For Replace')
     args = parser.parse_args()
@@ -69,4 +90,7 @@ if __name__ == '__main__':
     OUTPUT  = '../data'
     path = OUTPUT + '/captions_raw.csv'
     
-    modify_label(path, OUTPUT, args.names, args.name)
+    if args.stopwords:
+        stop_words(path, OUTPUT, args.names)
+    else:
+        modify_label(path, OUTPUT, args.names, args.name)

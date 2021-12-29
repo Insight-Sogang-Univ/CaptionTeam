@@ -5,7 +5,10 @@ class VocabBuilder2():
         self.tokenizer = Mecab(dicpath=dic_path).morphs
         
     def tokenize(self, caption):
-        return self.tokenizer(caption)
+        try:
+            return self.tokenizer(caption)
+        except:
+            return '<emp>'
     
     def tokenize_df(self, df):
         df = df.copy()

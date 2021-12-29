@@ -54,4 +54,4 @@ class CelebDataset(Dataset):
         return label
     
     def vectorize_caption(self, idx):
-        self.embedder.vectorize_caption(idx)
+        return self.embedder.vectorize_caption(idx)
