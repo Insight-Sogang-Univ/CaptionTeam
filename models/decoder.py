@@ -85,7 +85,9 @@ class DecoderAttention(nn.Module):
                     word_embed = captions[:, t-1, :]
                 context, attention_weight = self.attention(features, h)
                 # input_concat shape at time step t = (batch, embedding_dim + hidden_dim)
+                print(word_embed.size(), context.size())
                 input_concat = torch.cat([word_embed, context], 1)
+                print(h.size(), c.size())
                 h, c = self.lstm(input_concat, (h, c))
                 h = self.drop(h)
                 output = self.linear(h)
@@ -112,7 +114,7 @@ class DecoderAttention(nn.Module):
         c0 = torch.zeros_like(features)
         return h0, c0
 
-    def greedy_search(self, features, max_sentence=20):
+    def greedy_search(self, features, stop=None, max_sentence=20):
 
         """Greedy search to sample top candidate from distribution.
         <input>
@@ -121,13 +123,13 @@ class DecoderAttention(nn.Module):
         <output>
         - sentence : list of tokens
         """
-
+        features = features.squeeze(0)
         sentence = []
         weights = []
-        input_word = torch.tensor(0).unsqueeze(0)
+        input_word = torch.tensor(0).item()
         h, c = self.init_hidden(features)
         while True:
-            embedded_word = self.embeddings(input_word)
+            embedded_word = self.embeddings(input_word).unsqueeze(0)
             context, attention_weight = self.attention(features, h)
             # input_concat shape at time step t = (batch, embedding_dim + context size)
             input_concat = torch.cat([embedded_word, context], dim=1)
@@ -136,10 +138,12 @@ class DecoderAttention(nn.Module):
             output = self.linear(h)
             scoring = F.log_softmax(output, dim=1)
             top_idx = scoring[0].topk(1)[1]
+            if top_idx == stop:
+                break
             sentence.append(top_idx.item())
             weights.append(attention_weight)
             input_word = top_idx
-            if (len(sentence) >= max_sentence or top_idx == 1):
+            if len(sentence) >= max_sentence:
                 break
         return sentence #, weights
      

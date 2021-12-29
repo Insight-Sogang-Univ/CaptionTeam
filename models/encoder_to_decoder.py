@@ -36,16 +36,17 @@ class EncodertoDecoder(nn.Module):
                     output = self.decoderLSTM.linear(hiddens.unsqueeze(0))
                     predicted = output.argmax(-1)
                     
+                    if embedder.i2w[predicted.item()] == "<pad>":
+                        break
+                    
                     result_caption.append(predicted.item())
                     
                     device = x.device
                     x = embedder.vectorize_caption(predicted.item()).unsqueeze(0).unsqueeze(0)
                     x = x.to(device)
-                    
-                    if embedder.i2w[predicted.item()] == "<pad>":
-                        break
             
                 return [embedder.i2w[idx] for idx in result_caption]
             
             elif self.model=='att':
-                return self.decoderLSTM.greedy_search(x, max_length)
+                return [embedder.i2w[idx] for idx in \
+                    self.decoderLSTM.greedy_search(x, max_sentence=max_length, stop=embedder.w2i['<pad>'])]
