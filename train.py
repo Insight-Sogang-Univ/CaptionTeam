@@ -38,7 +38,12 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
         with torch.cuda.amp.autocast():
             outputs = model(images, vectors[:,:-1,:])
         # pdb.set_trace()
-        loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
+        # loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
+        outputs = outputs.argmax(-1)
+        print(outputs.unsqueeze(0).size(),
+              captions.reshape(1,1,-1).size())
+        loss = criterion(outputs.unsqueeze(0).size(),
+              captions.reshape(1,1,-1).size())
         
         loss.backward()
         optimizer.step()
@@ -88,7 +93,9 @@ def validate(model, dataloader, criterion):
         with torch.cuda.amp.autocast():
             outputs = model(images, vectors[:,:-1,:])
         
-        loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
+        # loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
+        loss = criterion(outputs.reshape(-1, outputs.shape[-1]).unsqueeze(0), 
+                         captions.reshape(-1).unsqueeze(0).unsqueeze(0))
         
         total_num += len(images)
         epoch_loss_total += loss.item()
@@ -109,26 +116,40 @@ def get_args():
                         type=str, help='사용 모델명 입력')
     parser.add_argument('-re','--resume_from',
                         help='지난 학습 모델 불러오기')
+    parser.add_argument('-use','--use',
+                        help='학습데이터 지정하기')
     args = parser.parse_args()
     return args
 
 if __name__=='__main__':
     args = get_args()
     
+    if args.use:
+        use = args.use
+        LABEL_PATH = LABEL_PATH[:-4]+f'_{use}.csv'
+        EMBED_LABEL = EMBED_LABEL[:-4]+f'_{use}.csv'
+        IMAGE_FILE = IMAGE_FILE[:-5]+f'_{use}.hdf5'
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Embedder & data 불러오기
-    if os.path.exists(EMBED_PATH) and os.path.exists(EMBED_LABEL):
+    if os.path.exists(EMBED_PATH):
         with open(EMBED_PATH, 'rb+') as f:
             ft_embedder = pickle.load(f)
-        df = pd.read_csv(EMBED_LABEL)
         print('Embedder Loaded')
     else:
-        print('Embedding Start')
         ft_embedder = CaptionEmbedder(VECTOR_DIM, WINDOW_SIZE, MIN_COUNT, SG)
         df = pd.read_csv(LABEL_PATH)
         df = ft_embedder.fit(df, 'fast')
         ft_embedder.save(EMBED_PATH)
+        print('Embedder Fit')
+    # Embed Label 불러오기
+    if os.path.exists(EMBED_LABEL):
+        df = pd.read_csv(EMBED_LABEL)
+    else:
+        print('Embedding Start')
+        df = pd.read_csv(LABEL_PATH)
+        df = ft_embedder.process_df(df)
         df.to_csv(EMBED_LABEL, index=False)
         print('Embedding Complete')
     VOCAB_SIZE = len(ft_embedder.w2i)
@@ -153,7 +174,8 @@ if __name__=='__main__':
     print('DataLoading Complete')
     
     model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2, model=args.model, embedder=ft_embedder).to(device)
-    criterion = nn.CrossEntropyLoss() #(ignore_index = dataset.w2i['<pad>'])
+    criterion = nn.CrossEntropyLoss(ignore_index=dataset.w2i['홍길동']) #(ignore_index = dataset.w2i['<pad>'])
+    # criterion = lambda candidate, ref: 1 - bleu_score(candidate, ref)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=3, T_mult=2, eta_min=0)
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
