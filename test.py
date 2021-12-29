@@ -39,7 +39,7 @@ def test(img_path, save_path=None, save=True, model='lstm'):
     
     #모델 불러오기
     model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2, model=model, embedder=embedder)
-    model_data = torch.load(MODEL_PATH)
+    model_data = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(model_data['model_state_dict'])
     model = model.to(device)
     model.eval()
