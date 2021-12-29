@@ -149,7 +149,7 @@ if __name__=='__main__':
     else:
         print('Embedding Start')
         df = pd.read_csv(LABEL_PATH)
-        df = ft_embedder.process_df(df)
+        df, _ = ft_embedder.process_df(df)
         df.to_csv(EMBED_LABEL, index=False)
         print('Embedding Complete')
     VOCAB_SIZE = len(ft_embedder.w2i)
