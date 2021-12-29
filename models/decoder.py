@@ -85,9 +85,7 @@ class DecoderAttention(nn.Module):
                     word_embed = captions[:, t-1, :]
                 context, attention_weight = self.attention(features, h)
                 # input_concat shape at time step t = (batch, embedding_dim + hidden_dim)
-                print(word_embed.size(), context.size())
                 input_concat = torch.cat([word_embed, context], 1)
-                print(h.size(), c.size())
                 h, c = self.lstm(input_concat, (h, c))
                 h = self.drop(h)
                 output = self.linear(h)
