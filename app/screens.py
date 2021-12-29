@@ -10,11 +10,15 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
 import os
+
 import cv2
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
 from kivy.uix.camera import Camera
 
+from kivy.uix.label import Label
+#from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
 ##new
 from kivy.uix.filechooser import  FileChooserIconView
 
@@ -26,16 +30,23 @@ from kivy.lang import Builder
 
 from test import test
 
+### name이 전체에서 불러올 수 있게 수정해야함
+global name
+name=None
 class CaptionScreen(Screen):
     def __init__(self, **kwargs):
         super(CaptionScreen, self).__init__(**kwargs)
-        
+       
     def to_screen(self, scr_name):
         self.manager.get_screen(scr_name).update_layout()
         self.manager.current = scr_name
     
     def update_layout(self):
         pass
+
+def get_var():
+    global name
+    return name
 
 class HomeScreen(CaptionScreen):
     def __init__(self, **kwargs):
@@ -55,9 +66,26 @@ class HomeScreen(CaptionScreen):
         self.button_pt.bind(on_press=lambda x: self.to_screen('File'))
         self.page.add_widget(self.button_pt)
         
+        #self.page.add_widget(Label(text='Chatbot'))
+
+        self.chatbox=TextInput(text='사용할 이름을 입력하세요.',multiline=False)
+        self.chatbox.font_name='font/malgun.ttf'
+        self.page.add_widget(self.chatbox) 
+
+        self.chatbox.bind(on_text_validate=self.on_enter, focus=self.on_focus)
         self.add_widget(self.page)
-        
-    
+
+    def on_enter(self, *args):
+        #self.chatbox.text += "\n입력이 완료되었습니다.\n "
+        #print(self.chatbox.text)
+        name=get_var()
+        name=self.chatbox.text
+        print(name,"in HomeScreen")
+        return name
+
+    def on_focus(self, instance, value):
+        self.chatbox.focus = True
+          
     ##로딩 화면
     def next(self, *args): ##lambda함수에서 전달 받은 args
         #print("args",args)
@@ -130,7 +158,7 @@ class FileScreen(CaptionScreen):
         if self.fichoo.selection[0][-3:] in ['png','jpg']:
             self.my_image.source=self.fichoo.selection[0]
         else:
-            self.my_image.source="mansoo.jpeg"
+            self.my_image.source="imgs/mansoo.jpeg"
         ### 그래서 사용자가 수동으로,, 사용할 이미지 더블클릭 후 이 버튼 누르면 final로 넘어감
         self.bt=Button(text="Choose", size_hint=(.1, .1))
         self.bt.bind(on_press=self.final)
@@ -146,8 +174,12 @@ class FileScreen(CaptionScreen):
         #self.save_path=save_path+str(i)+'.png'
         
         cv2.imwrite(self.image_path,image)
-        test(self.image_path,self.save_path, True)
+        name=get_var()
+        print(name,"in FileScreen")
+        test(self.image_path,self.save_path, True, name)
         print(self.fichoo.selection[0])
+
+    
 
     #def refresh(self):
     #    self.clear_widgets([self.manager.get_screen('Result')])
@@ -193,11 +225,15 @@ class CameraScreen(CaptionScreen):
         self.save_path='imgs/pic_captioned.png'
         #print("now in camera",i)
         #self.save_path=save_path+str(i)+'.png'
-        cv2.imwrite(self.image_path, self.image_frame)
+        name=get_var()
+        print(name,"in CameraScreen")
+
+        cv2.imwrite(self.image_path, self.image_frame,name)
         
         #####    임시 파일을 모델에 입력한다   #####
+        
         test(self.image_path,self.save_path, True)
-
+        
         self.to_screen('Result')
         #####       로딩팝업을 띄운다          #####
         #content=BoxLayout(orientation='vertical')
@@ -211,8 +247,8 @@ class CameraScreen(CaptionScreen):
         #####    끝나면 pop up 닫기          #####
        # popup.dismiss()
         #####      다음 화면으로 이동          #####
-        
-    
+
+
         
 class ResultScreen(CaptionScreen):
     def __init__(self, **kwargs):
@@ -233,9 +269,6 @@ class ResultScreen(CaptionScreen):
 
         self.image=Image(source='imgs/pic_captioned.png')
         self.image.reload()
- 
-        self.button_home=Button(text="Home", size_hint=(.5, .5))
-        self.button_home.bind(on_press=self.get_image)
         
         self.button_sv=Button(text="Save", font_size=40)
         self.button_sv.bind(on_press=self.on_pressed_sv)
@@ -250,7 +283,6 @@ class ResultScreen(CaptionScreen):
         self.button_pt.bind(on_press=lambda x: self.to_screen('Home'))
 
         self.page.add_widget(self.image)
-        self.page.add_widget(self.button_home)
         self.page.add_widget(self.button_sv)
         self.page.add_widget(self.button_rt1)
         self.page.add_widget(self.button_rt2)
