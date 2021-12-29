@@ -21,6 +21,7 @@ def test(img_path, save_path=None, save=True, model='lstm'):
     
     _image = image.clone().to(device)
     _image = image.type(torch.FloatTensor)
+    _image = _image.to(device)
     
     transform = transforms.Compose(
         [
@@ -37,9 +38,10 @@ def test(img_path, save_path=None, save=True, model='lstm'):
     VOCAB_SIZE = len(embedder.w2i)
     
     #모델 불러오기
-    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2, model=model, embedder=embedder).to(device)
+    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2, model=model, embedder=embedder)
     model_data = torch.load(MODEL_PATH)
     model.load_state_dict(model_data['model_state_dict'])
+    model = model.to(device)
     model.eval()
     
     #모델에 사진 넣기
