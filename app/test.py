@@ -13,7 +13,7 @@ from config.test_config import *
 from datasets.embedding import CaptionEmbedder
 
 def test(img_path, save_path=None, save=True):
-    
+    ### 'cuda' if torch.cuda.is_available() else 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     image = read_image(img_path)
@@ -32,12 +32,12 @@ def test(img_path, save_path=None, save=True):
     _image = transform(_image)
     
     #모델 불러오기
-    model = torch.load(MODEL_PATH).to(device)
+    model = torch.load(MODEL_PATH, map_location=device)
     model.eval()
     
     #모델에 사진 넣기
     embedder = CaptionEmbedder.load(EMBED_PATH)
-    caption = model.caption_image(_image, embedder, max_length=FIXED_LENGTH)
+    caption = ''.join(model.caption_image(_image, embedder, max_length=FIXED_LENGTH))
     
     #사진에 캡션 추가
     img = torch.permute(image, (1,2,0))
