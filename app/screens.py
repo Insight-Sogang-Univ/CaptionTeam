@@ -176,9 +176,8 @@ class FileScreen(CaptionScreen):
         cv2.imwrite(self.image_path,image)
         name=get_var()
         print(name,"in FileScreen")
-        test(self.image_path,self.save_path, True, name)
+        test(self.image_path,self.save_path, True)
         print(self.fichoo.selection[0])
-
     
 
     #def refresh(self):
@@ -232,7 +231,7 @@ class CameraScreen(CaptionScreen):
         
         #####    임시 파일을 모델에 입력한다   #####
         
-        test(self.image_path,self.save_path, True)
+        test(img_path=self.image_path,save_path=self.save_path, save= True)
         
         self.to_screen('Result')
         #####       로딩팝업을 띄운다          #####

@@ -6,7 +6,7 @@ def get_sorted_names(names:list, reverse=True):
     return sorted(names, key=len, reverse=reverse)
 
 def get_gt_names(names:list, length:int=2):
-    return [name for name in names if len(name)>=length]
+    return [name for name in names if len(str(name))>=length]
 
 def clean_shrt_eng_names(names:list, length:int=2):
     import re
@@ -28,11 +28,12 @@ def replace_name(caption:str, names:list, repName:str='홍길동'):
     # Connect the names
     patterns = '|'.join(names)
     # Get cleared caption
+    
     caption = re.sub(patterns, repName, caption)
     #caption = drop_duplicated_names(caption)
     return caption
 
-def replace_names(data:pd.DataFrame, names:pd.DataFrame, col_data:str='caption', col_name:str='name', repName:str='홍길동', inplace=False):
+def replace_names(data:pd.DataFrame, names:pd.DataFrame, col_data:str='caption', col_name:str='name', repName:str='홍길동', inplace=False, length=2):
     '''
     Replace names in caption dataframe from names dataframe
     data : dataframe which contains captions
@@ -43,7 +44,7 @@ def replace_names(data:pd.DataFrame, names:pd.DataFrame, col_data:str='caption',
     inplace : inplace?
     '''
     _data = data if inplace else data.copy() # inplace or not
-    _names = get_preprocessed_names(names[col_name])
+    _names = get_preprocessed_names(names[col_name], length=length)
     _data[col_data] = _data[col_data].apply(lambda x: replace_name(x, _names, repName))
     return _data
 
@@ -68,7 +69,6 @@ def revising_names(names, adds, deletes, save_path):
         
     new_names = names.append(pd.DataFrame({'name':for_add})).sort_values('name').reset_index(drop=True)
     new_names = new_names[~new_names.name.isin(weirds)].reset_index(drop=True)
-    
     new_names.to_csv(save_path, index=False)
 
 if __name__ == '__main__':

@@ -1,4 +1,3 @@
-import math
 from konlpy.tag import Mecab
     
 class VocabBuilder2():
