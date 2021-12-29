@@ -28,7 +28,7 @@ class CaptionEmbedder():
         
     def fit(self, df, method='fast'):
         
-        df = self.process_df(df)
+        df, self.w2i = self.process_df(df)
         
         captions = df['tokenized'].apply(lambda x: x.split())
         
@@ -54,9 +54,9 @@ class CaptionEmbedder():
         df = df.copy()
         builder = VocabBuilder2(DIC_PATH)
         df = builder.tokenize_df(df)
-        self.w2i = VocabBuilder2.make_dict(df['tokenized'], self.min_count)
-        df = builder.indexize_df(df, self.w2i)
-        return df
+        w2i = VocabBuilder2.make_dict(df['tokenized'], self.min_count)
+        df = builder.indexize_df(df, w2i)
+        return df, w2i
         
     def vectorize_caption(self, idx):
         if type(idx)==torch.Tensor:
