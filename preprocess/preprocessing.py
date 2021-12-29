@@ -22,6 +22,7 @@ if __name__=='__main__':
     
     print('Caption Preprocessing...')
     label_path = labeling.modify_label(RAW_LABEL, DATA_FOLDER, NAME_PATH, num=args.num)
+    labeling.stop_words(label_path, STOP_WORDS)
     print('Caption Preprocessing Complete')
     
     print('Images to HDF5...')

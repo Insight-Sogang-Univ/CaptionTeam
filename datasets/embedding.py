@@ -59,10 +59,11 @@ class CaptionEmbedder():
         return df
         
     def vectorize_caption(self, idx):
+        if type(idx)==torch.Tensor:
+            idx = idx.item()
         if self.i2w[idx]=='<unk>':
             return torch.zeros(self.vector_size)
         elif self.i2w[idx]=='<pad>':
             return torch.zeros(self.vector_size)
         else:
             return torch.from_numpy(self.model.wv[self.i2w[idx]].copy())
-    

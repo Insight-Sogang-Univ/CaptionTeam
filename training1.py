@@ -5,9 +5,8 @@ from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
 
 import os, time, pickle, argparse
-import pdb
 import pandas as pd
-from config.train_config import *
+from config.config import *
 from tqdm import tqdm
 
 from datasets.dataset import CelebDataset
@@ -17,15 +16,21 @@ from models.encoder_to_decoder import EncodertoDecoder
 def train(model, dataloader, criterion, optimizer, epoch=0):
     log_format = "epoch: {:4d}, step: {:4d}/{:4d}, loss: {:.6f}, " \
                               "elapsed: {:.2f}s {:.2f}m, lr: {:.6f}"
-
     epoch_loss_total = 0.
     total_num = 0
     timestep = 0
     
     begin_time = epoch_begin_time = time.time() #모델 학습 시작 시간
-
     progress_bar = tqdm(enumerate(dataloader),ncols=110)
     for i, (images, captions, vectors) in progress_bar:
+        
+        # indices = []
+        # for i in range(images.shape[0]):
+        #   if not torch.equal(images[i],torch.zeros((3,299,299))):
+        #     indices.append(i)
+        # images = images[indices]
+        # captions = captions[indices]
+        # vectors = vectors[indices]
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -34,10 +39,10 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
         images = images.to(device)
         captions = captions.to(device)
         vectors = vectors.to(device)
-        
+
         with torch.cuda.amp.autocast():
             outputs = model(images, vectors[:,:-1,:])
-        # pdb.set_trace()
+        
         loss = criterion(outputs.reshape(-1, outputs.shape[-1]), captions.reshape(-1))
         
         loss.backward()
@@ -102,19 +107,16 @@ def validate(model, dataloader, criterion):
 def get_args():
     parser = argparse.ArgumentParser(description='각종 옵션')
     parser.add_argument('-lr','--learning_rate', required=True,
-                        type=float, help='학습률 입력')
+                        type=float, help='모델이름 입력')
     parser.add_argument('-e','--epochs', required=True,
                         type=int, help='학습횟수 입력')
-    parser.add_argument('-m','--model', default='lstm',
-                        type=str, help='사용 모델명 입력')
-    parser.add_argument('-re','--resume_from',
-                        help='지난 학습 모델 불러오기')
+    parser.add_argument('--resume_from')
     args = parser.parse_args()
     return args
 
 if __name__=='__main__':
     args = get_args()
-    
+        
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # Embedder & data 불러오기
@@ -152,13 +154,21 @@ if __name__=='__main__':
     valid_loader = DataLoader(valid_data, batch_size=BATCH_SIZE, shuffle=False)
     print('DataLoading Complete')
     
-    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2, model=args.model, embedder=ft_embedder).to(device)
-    criterion = nn.CrossEntropyLoss() #(ignore_index = dataset.w2i['<pad>'])
+    
+    model = EncodertoDecoder(VECTOR_DIM, VECTOR_DIM, VOCAB_SIZE, num_layers=2).to(device)
+    criterion = nn.CrossEntropyLoss(ignore_index = dataset.w2i['<pad>'])
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=3, T_mult=2, eta_min=0)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+    
+    ##############
+    
+    ##############
     
     print(model)
+    
+    train_loss = []
+    valid_loss = []
+    print('Train Start')
     
     if args.resume_from:
         # 저장했던 중간 모델 정보를 읽습니다.
@@ -174,21 +184,18 @@ if __name__=='__main__':
     else:
         start_epoch = 0
     
-    train_loss = []
-    valid_loss = []
-    print(f'Train Start from {start_epoch+1}th epoch...')
     for epoch in range(start_epoch, args.epochs):
         ###################     Train    ###################
         model.train()
         train_epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
         train_loss.append(train_epoch_loss)
-        
         ###################     Valid    ###################
         model.eval()
         valid_epoch_loss = validate(model, valid_loader, criterion)
         valid_loss.append(valid_epoch_loss)
-        
         ###################   EPOCH END   #################
+        
+        
         home = os.getcwd()
         for path in SAVE_PATH.split('/'):
             if not os.path.exists(path):
@@ -202,6 +209,10 @@ if __name__=='__main__':
             'model_state_dict': model.state_dict(),
             },os.path.join(SAVE_PATH, 'checkpoint_epoch_'+str(epoch+1)+'.pt'))
         
+        
+        
         if scheduler: scheduler.step(valid_epoch_loss)
         
         print('{}th Train Loss : {}, Valid Loss : {}'.format(epoch+1, train_epoch_loss, valid_epoch_loss))
+        
+        
