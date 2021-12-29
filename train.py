@@ -26,14 +26,6 @@ def train(model, dataloader, criterion, optimizer, epoch=0):
 
     progress_bar = tqdm(enumerate(dataloader),ncols=110)
     for i, (images, captions, vectors) in progress_bar:
-        
-        # indices = []
-        # for i in range(images.shape[0]):
-        #   if not torch.equal(images[i],torch.zeros((3,299,299))):
-        #     indices.append(i)
-        # images = images[indices]
-        # captions = captions[indices]
-        # vectors = vectors[indices]
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
@@ -184,7 +176,7 @@ if __name__=='__main__':
     train_loss = []
     valid_loss = []
     print(f'Train Start from {start_epoch+1}th epoch...')
-    for epoch in range(args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         ###################     Train    ###################
         model.train()
         train_epoch_loss = train(model, train_loader, criterion, optimizer, epoch)
