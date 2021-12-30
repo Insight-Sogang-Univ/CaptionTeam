@@ -1,18 +1,21 @@
- # train.py 에서 저장된 모델을 불러와서, 주어진 이미지에 대해 캡션을 출력해야 함
+import os
+import pickle
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.io import read_image
+
+from metrics import *
+from utils_torch import *
+from utils_plot import visualize_att
+
 from PIL import ImageFont, ImageDraw, Image
 
 import numpy as np
 import argparse, cv2
 
 from config.test_config import *
-from datasets.embedding import CaptionEmbedder
-from models.encoder_to_decoder import EncodertoDecoder
-import os
 
 def test(img_path, save_path=None, save=True, model='lstm',name=None):
     print(name, "in test.py")
@@ -119,6 +122,26 @@ def test(img_path, save_path=None, save=True, model='lstm',name=None):
         else:
             cv2.imshow('imgwithcaption', img)
             cv2.waitKey(0) 
+
+def add_caption(img, caption):
+    from PIL import ImageFont, ImageDraw
+    
+    # 캡션 글자 크기 계산
+    size_img = min(img.shape[0],img.shape[1])
+    ft_size = int(size_img / 14)
+    
+    ### 캡션 폰트 사이즈 수정
+    font=ImageFont.truetype('font/RixYeoljeongdo Regular.ttf',ft_size)
+    
+    draw = ImageDraw.Draw(img) 
+    w, h = draw.textsize(caption, font=font, spacing=5)
+    img_W = img.size[0]
+    img_H = img.size[1]
+    
+    org=((img_W-w)/2, img_H-(img_H*0.1)) 
+    draw.text(org,caption,font=font,fill=(225,225,225))
+    
+    return np.array(img)
 
 def get_args():
     parser = argparse.ArgumentParser(description = '각종 옵션')
