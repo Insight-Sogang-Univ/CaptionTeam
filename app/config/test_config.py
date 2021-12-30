@@ -1,14 +1,10 @@
 ###  CONFIGURATION  ###
-DATA_FOLDER= 'data/debug'
 
-###     TEST     ###
-MODEL_PATH  = DATA_FOLDER+'/pt/checkpoint_epoch_2.pt' #17, 22, 31, 40
-EMBED_PATH  = DATA_FOLDER+'/embedder.pkl'
+###    INFERENCE    ###
+MODEL_DIR = 'saved_models/'
+MODEL_NAME = 'resnet101_attention_frozenENC_trainEMBD_rmsprop_b128_emdGLV300_best_val.pt'
 
-### EMBEDDING ###
-METHOD     = 'fast'
-VECTOR_DIM = 256
-WINDOW_SIZE= 1
-MIN_COUNT  = 2
-SG         = 1
-FIXED_LENGTH=20
+EMBEDDING_DIM = 300
+ATTENTION_DIM = 256
+DECODER_SIZE = 256
+BATCH_SIZE = 16
