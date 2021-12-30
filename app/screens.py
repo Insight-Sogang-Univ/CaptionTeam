@@ -35,22 +35,20 @@ from kivy.lang import Builder
 from test import test
 
 ### name이 전체에서 불러올 수 있게 수정해야함
-global name
-name=None
+
+
 class CaptionScreen(Screen):
+    username = None
+    
     def __init__(self, **kwargs):
-        super(CaptionScreen, self).__init__(**kwargs)
-       
+        super(CaptionScreen, self).__init__(**kwargs)  
+
     def to_screen(self, scr_name):
         self.manager.get_screen(scr_name).update_layout()
         self.manager.current = scr_name
     
     def update_layout(self):
         pass
-
-def get_var():
-    global name
-    return name
 
 class HomeScreen(CaptionScreen):
     def __init__(self, **kwargs):
@@ -67,7 +65,7 @@ class HomeScreen(CaptionScreen):
         
         self.page.add_widget(self.img)
         
-        self.chatbox=TextInput(text='사용할 이름을 입력하세요 \n =>',multiline=False, font_size=60,
+        self.chatbox=TextInput(text='이름 입력후 엔터를 눌러주세요',multiline=False, font_size=55,
                                 size_hint =(.5, .3),pos =(20, 20))
         self.chatbox.font_name='font/RixYeoljeongdo Regular.ttf'
         self.page.add_widget(self.chatbox) 
@@ -88,37 +86,21 @@ class HomeScreen(CaptionScreen):
         self.add_widget(self.page)
 
     def on_enter(self, *args):
-        name=get_var()
-        name=self.chatbox.text
-        print(name,"in HomeScreen")
-        return name
+        self.chatbox.text += "\n=> "
+        CaptionScreen.username=str(self.chatbox.text).split()[-2]
+        print(CaptionScreen.username,"in HomeScreen")
+        #return CaptionScreen.username
 
     def on_focus(self, instance, value):
         self.chatbox.focus = True
           
-    ##로딩 화면
-    def next(self, *args): ##lambda함수에서 전달 받은 args
-    
-        args[0].dismiss() ##팝업창 닫힘
-        
-        levels=BoxLayout(orientation='vertical')
-        lv_button=Button(text='See the result')
-        levels.add_widget(lv_button)
-        ## auto_dismiss True이면 저절로 팝업 없어짐, False면 수동, 팝업 되는 대상이 content라는 위젯 자체
-        popups=Popup(title='Loading...', content=levels,
-                        auto_dismiss=False, size_hint=(.5,.5))
-            ## 팝업 오픈
-        popups.open()
-            ## 한번만 쓰고 버리는 람다함수를 on_press로 전달
-            ## press button 됐을 때, restart_board 실행됨. pop up 닫기 위함.
-        lv_button.bind(on_press=lambda *args:self.restart(popups, *args))
 
 
 ### 파일 탐색기로 선택한 이미지 경로 저장해서 캡셔닝에서 사용
 class FileScreen(CaptionScreen):
     def __init__(self, **kwargs):
         super(FileScreen, self).__init__(**kwargs)
-
+        
         self.page = BoxLayout(orientation='vertical',padding=10, spacing=20)
         self.lb=Label(text="미리보기", font_size=40, size_hint=(1,.1), font_name='font/RixYeoljeongdo Regular.ttf')
         self.page.add_widget(self.lb)
@@ -131,7 +113,6 @@ class FileScreen(CaptionScreen):
         self.fichoo.dirselect=True
 
         ### 더블클릭 할 때마다 selected 호출됨
-       
         self.fichoo.bind(selection=self.selected)
         self.page.add_widget(self.fichoo)
     
@@ -162,16 +143,14 @@ class FileScreen(CaptionScreen):
             print(self.fichoo.selection[0])
 
         else:
-            self.my_image.source="imgs/mansoo.jpeg"
-
+            self.my_image.source="imgs/insight.jpg"
 
     def final(self,val):
-        test(self.image_path,self.save_path, True)
+        test(img_path=self.image_path,save_path=self.save_path, save=True, name=CaptionScreen.username)
         self.to_screen('Result')
 
 
 class CameraScreen(CaptionScreen):
-    
     def __init__(self, **kwargs):
         super(CameraScreen, self).__init__(**kwargs)
     
@@ -212,17 +191,13 @@ class CameraScreen(CaptionScreen):
         ##### 사진을 찍고 임시 파일로 저장한다 #####
         self.image_path='imgs/pic.png'
         self.save_path='imgs/pic_captioned.png'
-        #print("now in camera",i)
-        #self.save_path=save_path+str(i)+'.png'
-        name=get_var()
-        print(name,"in CameraScreen")
+       
+        print(CaptionScreen.username,"in CameraScreen")
 
-        cv2.imwrite(self.image_path, self.image_frame,name)
+        cv2.imwrite(self.image_path, self.image_frame)
         
         #####    임시 파일을 모델에 입력한다   #####
-        
-        test(img_path=self.image_path,save_path=self.save_path, save= True)
-        
+        test(img_path=self.image_path,save_path=self.save_path, save= True, name=CaptionScreen.username)
         self.to_screen('Result')
 
 
@@ -230,12 +205,7 @@ class CameraScreen(CaptionScreen):
 class ResultScreen(CaptionScreen):
     def __init__(self, **kwargs):
         super(ResultScreen, self).__init__(**kwargs)
-        ### 얘네가 그때그때 실행되기ㅔ 어딘가에 추가 시켜서 그때그때 다시 실행되게.
-        ### 함수 추가해보자
-
         self.path='imgs/pic_captioned.png'
-        #image_path=path+str(i)+'.png'
-        
         self.update_layout()
 
     def update_layout(self):
