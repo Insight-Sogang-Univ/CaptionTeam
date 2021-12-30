@@ -62,35 +62,45 @@ class HomeScreen(CaptionScreen):
         self.page.add_widget(self.lb)
 
         self.img=Image(source='imgs/insight.jpg', size_hint =(1, .7))
-        
         self.page.add_widget(self.img)
-        
-        self.chatbox=TextInput(text='이름 입력후 엔터를 눌러주세요',multiline=False, font_size=55,
-                                size_hint =(.5, .3),pos =(20, 20))
+
+        self.namelb=Label(text="이름 입력 후\n촬영/앨범을 눌러주세요!",
+                        font_size=40,size_hint=(.3, .3),
+                        font_name='font/RixYeoljeongdo Regular.ttf')
+        self.page.add_widget(self.namelb)
+
+        self.chatbox=TextInput(text="",multiline=False, font_size=55,
+                                size_hint =(.3, .1),pos =(20, 20))
         self.chatbox.font_name='font/RixYeoljeongdo Regular.ttf'
         self.page.add_widget(self.chatbox) 
         
         self.button_cam=Button(text="사진 찍기", font_size=40, 
                                 size_hint =(.5, .2),pos =(20, 20),
                                 font_name='font/RixYeoljeongdo Regular.ttf')
-        self.button_cam.bind(on_press=lambda x: self.to_screen('Camera'))
+        self.button_cam.bind(on_press=lambda x: self.name_on_it('Camera'))
         self.page.add_widget(self.button_cam)
 
         self.button_pt=Button(text="앨범 불러오기", font_size=40,
                                 size_hint =(.5, .2),pos =(20, 20),
                                 font_name='font/RixYeoljeongdo Regular.ttf')
-        self.button_pt.bind(on_press=lambda x: self.to_screen('File'))
+        self.button_pt.bind(on_press=lambda x: self.name_on_it('File'))
         self.page.add_widget(self.button_pt)
 
-        self.chatbox.bind(on_text_validate=self.on_enter, focus=self.on_focus)
+        #self.chatbox.bind(on_text_validate=self.name_on_it, focus=self.on_focus)
         self.add_widget(self.page)
 
-    def on_enter(self, *args):
-        self.chatbox.text += "\n=> "
-        CaptionScreen.username=str(self.chatbox.text).split()[-2]
-        print(CaptionScreen.username,"in HomeScreen")
-        #return CaptionScreen.username
+    def name_on_it(self, screenname):
+        #self.chatbox.text += "\n"
+        print(type(self.chatbox.text))
+        try :
+            CaptionScreen.username=self.chatbox.text.split()[-1]
+            print(CaptionScreen.username,"in HomeScreen")
+            self.chatbox.text = ''
+            self.to_screen(screenname)
+        except :
+            CaptionScreen.username = ''
 
+ 
     def on_focus(self, instance, value):
         self.chatbox.focus = True
           
