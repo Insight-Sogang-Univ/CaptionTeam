@@ -1,0 +1,3 @@
+[submodule "simple_image_caption_app"]
+	path = simple_image_caption_app
+	url = https://github.com/Park323/simple_image_caption_app
